@@ -1,8 +1,21 @@
+# VCS 2600 dev
 
 
+## Resources
 
-Resources
+### Ref Sheets
 
+*opcodes*: http://www.6502.org/tutorials/6502opcodes.html
+*colors*: http://www.randomterrain.com/atari-2600-memories-tia-color-charts.html
+
+
+### Editors
+
+http://www.labelmaker2600.com/
+http://www.alienbill.com/2600/playfieldpal.html
+http://www.alienbill.com/2600/playerpalnext.html
+
+### Misc
 http://www.bjars.com/sourcecode.html
 
 http://www.randomterrain.com/atari-2600-memories.html

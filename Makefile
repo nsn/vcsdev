@@ -7,7 +7,7 @@ OBJECTS=${SRC:.asm=.bin}
 
 .PHONY:
 all: $(OBJECTS)
-	@echo "made $^"
+	@echo "made $?"
 
 %.bin: %.asm
 	$(DASM) $< $(FLAGS) -o$@ -l$(subst .bin,.txt,$@)
@@ -18,5 +18,5 @@ run-%: %.bin
 
 .PHONY:
 clean:
-	rm *.bin
-	rm *.txt
+	rm -f $(OBJECTS) $(OBJECTS:.bin=.txt)
+
