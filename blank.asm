@@ -1,5 +1,4 @@
-; '2600 for Newbies
-; Session 13 - Playfield
+; Atari VCS 2600 blank template
 
     processor 6502
 
