@@ -1,7 +1,16 @@
 # VCS 2600 dev
 
+## Guard
+
+needs to have guard and guard-shell installed:
+
+> gem install guard
+> gem install guard-shell
 
 ## Resources
+
+28c3 Atari 2600 VCS talk https://youtu.be/aNyebnxV9R8
+<iframe width="560" height="315" src="https://www.youtube.com/embed/aNyebnxV9R8" frameborder="0" allowfullscreen></iframe>
 
 ### Ref Sheets
 
