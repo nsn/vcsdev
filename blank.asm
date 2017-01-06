@@ -1,125 +1,136 @@
-; Atari VCS 2600 blank template
+; playfield test
 
     processor 6502
 
     include "vcs.h"
     include "macro.h"
 
-;------------------------------------------------------------------------------
-;--- DEFINES
-
-COL_BLACK               = #$00
-COL_WHITE               = #$0E
-
-;------------------------------------------------------------------------------
-
-
-  SEG
-  ORG $F000
+    SEG
+    ORG $F000
 
 Reset
-
-;------------------------------------------------
-; Clear RAM and all TIA registers
-
-  ldx #0 
-  lda #0
-
-Clear 
-  sta 0,x 
-  inx 
-  bne Clear
-
-;------------------------------------------------
-; Once-only initialization...
-
-  lda COL_BLACK
-  sta COLUBK             ; set the background color
-
-  lda COL_WHITE
-  sta COLUPF             ; set playfield color
+;----------------------------
+; Variables
+;----------------------------
 
 
-  lda #0
-  ldy #0                 
-  ldx #0                 
+;----------------------------
+; Start of program
+;----------------------------
+ClearRam
 
-;------------------------------------------------
+    ; use CLEAN_START from <macro.h>
+    CLEAN_START
 
-StartOfFrame
+    ; set bg color to black ($0)
+    lda #$00
+    sta COLUBK
+    ; set pf color to white
+    lda #$0E
+    sta COLUPF
+    ; set pf behaviour
+    lda #$00
+    sta CTRLPF
 
-; Start of new frame
-; Start of vertical blank processing
+    lda #%10101011
+    sta PF1
+;----------------------------
+; Start of Framw
+;----------------------------
+FrameStart
+    ; vblank
+    lda #0
+    sta VBLANK
+    ; vsync
+    lda #2
+    sta VSYNC
+    ; 3 scanlines of vsync
+    sta WSYNC
+    sta WSYNC
+    sta WSYNC
+    ; set timer for 37 scanlines
+    ; 1 scanline = 76 CPU cycles
+    ; 37*76 = 2812, 
+    ; subtrct 14 cycles of timer overhead => 2798 cycles of wait
+    ; TIMINT64 ticks once every 64 clock cycles
+    ; 2798/64 = ~64
+    lda #43
+    sta TIM64T
+    ; blank out vsync
+    lda #0
+    sta VSYNC
+
+;----------------------------
+; vertical blank wait
+; put init logic here
+;----------------------------
+
+;----------------------------
+; vertical blank wait
+;----------------------------
+VerticalBlank
+    ; loop until timer reaches 0
+    lda INTIM
+    bne VerticalBlank 
+
+    ; wait for end of line
+    sta WSYNC
+    ; lda is 0, so we can use it to end VBLANK period
+    sta VBLANK
+
+    ; wait one more line so that we are sure we line up...
+    sta WSYNC
+
+    ;-----------------
+    ; activate movents here...
+    ;-----------------
 
 
-  lda #0
-  sta VBLANK
 
-  lda #2
-  sta VSYNC
+;----------------------------
+; Scanline loop
+;----------------------------
+    ; y is our scanline counter
+    ldy #191
 
-  sta WSYNC
-  sta WSYNC
-  sta WSYNC               ; 3 scanlines of VSYNC signal
+Scanloop
+    ; wait for prev line to finish
+    sta WSYNC
+    
+    ; decrease line counter in Y
+    ; lopp until y == 0
+    dey
+    bne Scanloop
 
-  lda #0
-  sta VSYNC           
-
-;------------------------------------------------
-; 37 scanlines of vertical blank...
-
-  ldx #0
-
-VerticalBlank 
-  
-  sta WSYNC
-  inx
-  cpx #37
-  bne VerticalBlank
-
-;------------------------------------------------
-; end of vertical blank
+    ; end of color lines
+    ; 2 for VBLANK
+    lda #2
+    ; finish last line
+    sta WSYNC
+    ; make tia output invisible for overscan
+    sta VBLANK
 
 
-;------------------------------------------------
-; Do 192 scanlines of color-changing (our picture)
+;----------------------------
+; Overscan
+;----------------------------
+    ; wait for 30 lines
+    ldx #30
+OverScan
+    sta WSYNC
+    dex
+    bne OverScan
 
-  ldx #0                 ; this counts our scanline number
+    ; jmp to start of next frame
+    jmp FrameStart
 
-Picture
- 
+;----------------------------
+; Reset/Break 
+;----------------------------
+    ORG $FFFC
+    ; set Reset pointer (at $FFFC and $FFFD) to Reset label 
+    .word Reset
+    ; set BRK pointer (at $FFFE and $FFFF) to Reset label
+    .word Reset
 
-  sta WSYNC              ; wait till end of scanline
 
-  inx
-  cpx #192
-  bne Picture
-
-;------------------------------------------------
-
-  lda #%01000010
-  sta VBLANK          ; end of screen - enter blanking
-
-; 30 scanlines of overscan...
-
-  ldx #0
-
-Overscan        
-  sta WSYNC
-  inx
-  cpx #30
-  bne Overscan
-
-  jmp StartOfFrame
-
-;------------------------------------------------------------------------------
-
-  ORG $FFFA
-
-InterruptVectors
-
-  .word Reset          ; NMI
-  .word Reset          ; RESET
-  .word Reset          ; IRQ
-
-  END
