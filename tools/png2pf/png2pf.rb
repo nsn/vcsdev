@@ -19,7 +19,8 @@ opts = {
     :cols => 40,
     :blank => ChunkyPNG::Color.from_hex("#000000"),
     :debug => false,
-    :prefix => "PFDATA"
+    :prefix => "PFDATA",
+    :inverted => false
 }
 
 OptionParser.new do |opt|
@@ -30,6 +31,7 @@ OptionParser.new do |opt|
     opt.on("-r", "--rows=val", Integer, "number of rows to be considered, defaults to min(height of input image, #192)") { |o| opts[:rows] = o }
     opt.on("-c", "--cols=val", Integer, "number of columns to be considered, defaults to min(width of input image, #40)") { |o| opts[:cols] = o }
     opt.on("-b", "--blank-color=val", ChunkyPNG::Color, "color to consider as blank (#%0), all other colors are considered filled (#%1), format: #rrggbb. default = #000") { |o| opts[:blank] = o }
+    opt.on("-i", "--invert-output", FalseClass, "invert output - outputs the strips form the bottom up, useful if your line counter counts down instead of up") { |o| opts[:inverted] = true }
     opt.on("-d", "--debug", FalseClass, "outputs some debug to stderr") { |o| opts[:debug] = true }
 end.parse!
 
@@ -93,12 +95,16 @@ end
 # now output the strips
 numStrips = (width+3).divmod(8)[0] + 1
 
-puts opts[:prefix] 
+puts "#{opts[:prefix]}:" 
 puts
 
 numStrips.times do |i|
-    puts "#{opts[:prefix]}_#{i}"
-    strips[i].each do |b|
+    puts "#{opts[:prefix]}_#{i}:"
+    strip = strips[i]
+    if (opts[:inverted]) then
+        strip = strips[i].reverse
+    end
+    strip.each do |b|
         puts "    .byte #%#{bitstring(b, 8)}"
     end
     puts
