@@ -84,7 +84,6 @@ VerticalBlank:
     sta WSYNC 
     sta VSYNC
     ; wait until vertical blank period is over
-    ; move to VerticalBlank?
 VerticalBlankWait:
     lda INTIM
     bne VerticalBlankWait
@@ -98,18 +97,11 @@ DrawScreen:
     sta WSYNC
     sta VBLANK ; since A = #0
 
-    ; actual draw code
-    lda #2
-    sta CTRLPF
-
+    ; Y will be our scanline counter
     ldy #191
 ScanLoop:
     ; WSYNC is placed BEFORE all of this action takes place.
     STA WSYNC
-    lda #$0e
-    sta COLUPF
-    sta COLUP0
-    sta COLUP1
     lda #$ff
     sta PF0
     sta PF1
