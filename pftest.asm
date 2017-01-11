@@ -47,7 +47,7 @@ ClearRam:
     lda #$0E
     sta COLUPF
     ; set pf behaviour
-    lda #%00000001
+    lda #%00000000
     sta CTRLPF
 
 ;----------------------------
@@ -101,13 +101,19 @@ DrawScreen:
     ldy #191
 ScanLoop:
     ; WSYNC is placed BEFORE all of this action takes place.
-    STA WSYNC
+    sta WSYNC
+
+    ; load and draw left side of screen
     lda PFDATA_0,y
     sta PF0
     lda PFDATA_1,y
     sta PF1
     lda PFDATA_2,y
     sta PF2
+
+    ; load and draw right side of screen
+
+
     DEY
     BNE ScanLoop    
 
@@ -118,7 +124,7 @@ ScanLoop:
     ; re-use Y which is still 0
     sty PF0
     sty PF1
-    sty PF1  ; ? PF2?
+    sty PF2  ; ? PF2?
     sty GRP0
     sty GRP1
     sty ENAM0
