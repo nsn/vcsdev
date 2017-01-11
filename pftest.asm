@@ -102,9 +102,11 @@ DrawScreen:
 ScanLoop:
     ; WSYNC is placed BEFORE all of this action takes place.
     STA WSYNC
-    lda #$ff
+    lda PFDATA_0,y
     sta PF0
+    lda PFDATA_1,y
     sta PF1
+    lda PFDATA_2,y
     sta PF2
     DEY
     BNE ScanLoop    
@@ -140,9 +142,8 @@ OverScanLineWait:
 ;----------------------------
 ; Data
 ;----------------------------
-    ORG $FF00
-
-    ;include "pftest.inc"
+    
+    include "pftest.inc"
 
 ;----------------------------
 ; Reset/Break 
