@@ -104,14 +104,26 @@ ScanLoop:
     sta WSYNC
 
     ; load and draw left side of screen
-    lda PFDATA_0,y
-    sta PF0
-    lda PFDATA_1,y
-    sta PF1
-    lda PFDATA_2,y
-    sta PF2
+    lda PFDATA_0,y      ; 4
+    sta PF0             ; +3 = 7
+    lda PFDATA_1,y      ; +4 = 11
+    sta PF1             ; +3 = 14
+    lda PFDATA_2,y      ; +4 = 18
+    sta PF2             ; +3 = 21
 
     ; load and draw right side of screen
+    ; right side starts at 40 cycles in
+    nop                 ; +2 = 23
+    nop                 ; +2 = 25
+    nop                 ; +2 = 27
+    ; start loading PF0
+    lda PFDATA_3,y      ; +4 = 31
+    ; PF0 no longer visible, safe to write
+    sta PF0             ; +3 = 34
+    lda PFDATA_4,y      ; +4 = 38
+    sta PF1             ; +3 = 41
+    lda PFDATA_5,y      ; +4 = 45
+    sta PF2             ; +3 = 48
 
 
     DEY
@@ -124,7 +136,7 @@ ScanLoop:
     ; re-use Y which is still 0
     sty PF0
     sty PF1
-    sty PF2  ; ? PF2?
+    sty PF2  
     sty GRP0
     sty GRP1
     sty ENAM0
