@@ -103,27 +103,16 @@ DrawScreen:
 
     ldy #191
 ScanLoop:
-    TYA
-    SEC                     
-    SBC PlayfieldY
-    LSR   ;Divide by 4
-    LSR
-    AND #7  ;modulo 8
-    TAX
-    LDA PFData0,X           ;Load ahead of time.
     ; WSYNC is placed BEFORE all of this action takes place.
     STA WSYNC
-    STA PF0                 ;[0] +3 = *3*   < 23
-    LDA PFLColor,X          ;[3] +4
-     ;In a real game, I wouldn't be this redundant.
-    STA COLUP0              ;[7] +3 = *10*  < 23
-    STA COLUPF              ;[10]+3 = *13*  < 23
-    LDA PFData1,X           ;[13]+4
-    STA PF1                 ;[17]+3 = *20*  < 29
-    LDA PFRColor,X          ;[20]+4
-    STA COLUP1              ;[24]+3 = *27*  < 49
-    LDA PFData2,X           ;[27]+4
-    STA PF2                 ;[31]+3 = *34*  < 40
+    lda #$0e
+    sta COLUPF
+    sta COLUP0
+    sta COLUP1
+    lda #$ff
+    sta PF0
+    sta PF1
+    sta PF2
     DEY
     BNE ScanLoop    
 
