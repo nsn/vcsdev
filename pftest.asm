@@ -41,14 +41,14 @@ ClearRam:
 
 ; set TIA behaviour
     ; set bg color to black ($0)
-;    lda #$00
-;    sta COLUBK
+    lda #$00
+    sta COLUBK
     ; set pf color to white
-;    lda #$0E
-;    sta COLUPF
+    lda #$0E
+    sta COLUPF
     ; set pf behaviour
-;    lda #%00000001
-;    sta CTRLPF
+    lda #%00000001
+    sta CTRLPF
 
 ;----------------------------
 ; Main Loop
@@ -83,16 +83,17 @@ VerticalBlank:
     ; end vsync period
     sta WSYNC 
     sta VSYNC
+    ; wait until vertical blank period is over
+    ; move to VerticalBlank?
+VerticalBlankWait:
+    lda INTIM
+    bne VerticalBlankWait
     rts         ; return
 
 ;----------------------------
 ; Draw visible scanlines
 ;----------------------------
 DrawScreen:
-    ; wait until vertical blank period is over
-    ; move to VerticalBlank?
-    lda INTIM
-    bne DrawScreen
     ; wait for last line to finish
     sta WSYNC
     sta VBLANK ; since A = #0
