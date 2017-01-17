@@ -98,6 +98,17 @@ VerticalBlank:
     ; free cycles!
     ;----------------
 
+    ; init PF variables
+    lda #%00011111
+    sta PFData0
+    lda #%00000000
+    sta PFData1
+    sta PFData2
+    sta PFData3
+    sta PFData4
+    lda #%10000000
+    sta PFData5
+
     ; wait until vertical blank period is over
 VerticalBlankWait:
     lda INTIM
@@ -112,13 +123,6 @@ DrawScreen:
     sta WSYNC
     sta VBLANK ; since A = #0
 
-    ; init PF registers
-    lda #%00011111
-    sta PFData0
-    sta PF0
-    lda #%00000000
-    sta PFData1
-    sta PFData2
 
     ; Y will be our scanline counter
     ldy #191
@@ -140,10 +144,12 @@ ScanLineGEQ0
     cpy #191-15
     bcc ScanLineGEQ16
     beq ScanLineGEQ16
+    ; calc PF0
     lda PFData0
     asl 
     ora #1
     sta PFData0
+    ; calc upper nibble of PF5
     jmp PFDone
 ScanLineGEQ16:
     ; next 32 scanlines -> PF1
