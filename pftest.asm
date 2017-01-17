@@ -316,6 +316,26 @@ PFCalcTS2:
     rts ; PFCalcTS2
 ; calc playfield for tunnel segment 3
 PFCalcTS3:
+    ; calc lower nibble of PF2
+    lda PFData2
+    and #MASK_LOWER_NIBBLE
+    asl 
+    ora #%00000001
+    sta tmp
+    lda PFData2
+    and #MASK_UPPER_NIBBLE
+    ora tmp
+    sta PFData2
+    ; calc upper nibble of PF4
+    lda PFData4
+    and #MASK_UPPER_NIBBLE
+    asl 
+    ora #%00010000
+    sta tmp
+    lda PFData4
+    and #MASK_LOWER_NIBBLE
+    ora tmp
+    sta PFData4
     rts ; PFCalcTS3
 
 
