@@ -175,6 +175,7 @@ TunnelSection0:
     cpy #TS1_CEIL_SCANLINES
     bcc TunnelSection1
     beq TunnelSection1
+    ; pf calculations
     jsr PFCalcTS0
     jmp PFDone
 TunnelSection1:
@@ -186,36 +187,20 @@ TunnelSection1:
     ; set bgcol
     lda #PFCOL_LIGHT
     sta COLUBK
-    ; calc upper nibble of PF1
-    lda PFData1
-    and #MASK_UPPER_NIBBLE
-    lsr 
-    ora #%10000000
-    sta tmp
-    lda PFData1
-    and #MASK_LOWER_NIBBLE
-    ora tmp
-    sta PFData1
-    ; calc lower nibble of PF5
-    lda PFData5
-    and #MASK_LOWER_NIBBLE
-    lsr 
-    ora #%00001000
-    sta tmp
-    lda PFData5
-    and #MASK_LOWER_NIBBLE
-    ora tmp
-    sta PFData5
+    ; pf calculations
+    jsr PFCalcTS1
     jmp PFDone
 TunnelSection2:
-;    ; next 16 scanlines 
-;    ; 2nd tunnel section
-;    cpy #TS3_CEIL_SCANLINES
-;    bcc TunnelSection3
-;    beq TunnelSection3
-;    ; set bgcol
-;    lda #PFCOL_DARK
-;    sta COLUBK
+    ; next 16 scanlines 
+    ; 2nd tunnel section
+    cpy #TS3_CEIL_SCANLINES
+    bcc TunnelSection3
+    beq TunnelSection3
+    ; set bgcol
+    lda #PFCOL_DARK
+    sta COLUBK
+    ; pf calculations
+    jsr PFCalcTS2
 ;    ; calc lower nibble of PF1
 ;    lda PFData1
 ;    and #MASK_LOWER_NIBBLE
@@ -236,9 +221,8 @@ TunnelSection2:
 ;    and #MASK_UPPER_NIBBLE
 ;    ora tmp
 ;    sta PFData4
-;    jmp PFDone
-;TunnelSection3:
-ScanLineGEQ64:
+    jmp PFDone
+TunnelSection3:
     
 PFDone:
 
@@ -292,7 +276,54 @@ PFCalcTS0:
     ora tmp
     sta PFData5
     rts ; PFCalcTS0
- 
+; calc playfield for tunnel segment 1
+PFCalcTS1:
+    ; calc upper nibble of PF1
+    lda PFData1
+    and #MASK_UPPER_NIBBLE
+    lsr 
+    ora #%10000000
+    sta tmp
+    lda PFData1
+    and #MASK_LOWER_NIBBLE
+    ora tmp
+    sta PFData1
+    ; calc lower nibble of PF5
+    lda PFData5
+    and #MASK_LOWER_NIBBLE
+    lsr 
+    ora #%00001000
+    sta tmp
+    lda PFData5
+    and #MASK_LOWER_NIBBLE
+    ora tmp
+    sta PFData5
+    rts ; PFCalcTS1
+; calc playfield for tunnel segment 2
+PFCalcTS2:
+    ; calc lower nibble of PF1
+    lda PFData1
+    and #MASK_LOWER_NIBBLE
+    lsr 
+    ora #%00001000
+    sta tmp
+    lda PFData1
+    and #MASK_UPPER_NIBBLE
+    ora tmp
+    sta PFData1
+    ; calc lower nibble of PF4
+    lda PFData4
+    and #MASK_LOWER_NIBBLE
+    asl 
+    ora #%00000001
+    sta tmp
+    lda PFData4
+    and #MASK_UPPER_NIBBLE
+    ora tmp
+    sta PFData4
+    rts ; PFCalcTS2
+
+
 ;----------------------------
 ; Overscan
 ;----------------------------
