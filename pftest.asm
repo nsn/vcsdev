@@ -118,7 +118,7 @@ VerticalBlank:
     ;----------------
 
     ; init PF variables
-    lda #%00011111
+    lda #%00010000
     sta PFData0
     lda #%00000000
     sta PFData1
@@ -186,24 +186,77 @@ TunnelSection0:
     ora tmp
     sta PFData0
     ; TODO: calc upper nibble of PF5
+    lda PFData5
+    and #MASK_UPPER_NIBBLE
+    lsr 
+    ora #%10000000
+    sta tmp
+    lda PFData5
+    and #MASK_LOWER_NIBBLE
+    ora tmp
+    sta PFData5
     jmp PFDone
 TunnelSection1:
     ; next 16 scanlines 
+    ; 2nd tunnel section
     cpy #TS2_CEIL_SCANLINES
     bcc TunnelSection2
     beq TunnelSection2
     ; set bgcol
     lda #PFCOL_LIGHT
     sta COLUBK
-    ; calc PF1
+    ; calc upper nibble of PF1
     lda PFData1
+    and #MASK_UPPER_NIBBLE
     lsr 
     ora #%10000000
+    sta tmp
+    lda PFData1
+    and #MASK_LOWER_NIBBLE
+    ora tmp
     sta PFData1
-    ; TODO: calc lower nibble of PF5
-    ; TODO: calc lower nibble of PF4
+    ; calc lower nibble of PF5
+    lda PFData5
+    and #MASK_LOWER_NIBBLE
+    lsr 
+    ora #%00001000
+    sta tmp
+    lda PFData5
+    and #MASK_LOWER_NIBBLE
+    ora tmp
+    sta PFData5
     jmp PFDone
 TunnelSection2:
+;    ; next 16 scanlines 
+;    ; 2nd tunnel section
+;    cpy #TS3_CEIL_SCANLINES
+;    bcc TunnelSection3
+;    beq TunnelSection3
+;    ; set bgcol
+;    lda #PFCOL_DARK
+;    sta COLUBK
+;    ; calc lower nibble of PF1
+;    lda PFData1
+;    and #MASK_LOWER_NIBBLE
+;    lsr 
+;    ora #%00001000
+;    sta tmp
+;    lda PFData1
+;    and #MASK_UPPER_NIBBLE
+;    ora tmp
+;    sta PFData1
+;    ; calc lower nibble of PF4
+;    lda PFData4
+;    and #MASK_LOWER_NIBBLE
+;    asl 
+;    ora #%00000001
+;    sta tmp
+;    lda PFData4
+;    and #MASK_UPPER_NIBBLE
+;    ora tmp
+;    sta PFData4
+;    jmp PFDone
+;TunnelSection3:
 ScanLineGEQ64:
     
 PFDone:
