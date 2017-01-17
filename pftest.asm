@@ -8,6 +8,9 @@
 ;----------------------------
 ; Constants
 ;----------------------------
+MASK_UPPER_NIBBLE = %11110000
+MASK_LOWER_NIBBLE = %00001111
+
 PAL = 0
 NTSC = 1
 
@@ -35,6 +38,8 @@ TS4_CEIL_SCANLINES = NUM_SCANLINES-63
 ;----------------------------
     SEG.U variables
     ORG $80
+
+tmp         ds 2
 
 PFData0     .byte   
 PFData1     .byte  
@@ -170,10 +175,15 @@ TunnelSection0:
     cpy #TS1_CEIL_SCANLINES
     bcc TunnelSection1
     beq TunnelSection1
-    ; calc PF0
+    ; calc upper nibble of PF0
     lda PFData0
+    and #MASK_UPPER_NIBBLE
     asl 
-    ora #1
+    ora #%00010000
+    sta tmp
+    lda PFData0
+    and #MASK_LOWER_NIBBLE
+    ora tmp
     sta PFData0
     ; TODO: calc upper nibble of PF5
     jmp PFDone
