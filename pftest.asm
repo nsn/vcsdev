@@ -8,9 +8,23 @@
 ;----------------------------
 ; Constants
 ;----------------------------
+PAL = 0
+NTSC = 1
+
+; ntsc constants
 VBLANK_WAIT = #43
+NUM_SCANLINES = 191
+
+; colors
 PFCOL_DARK  = $94
 PFCOL_LIGHT = $98
+
+; scanline heights for tunnel segments
+TS0_CEIL_SCANLINES = NUM_SCANLINES-0
+TS1_CEIL_SCANLINES = NUM_SCANLINES-15
+TS2_CEIL_SCANLINES = NUM_SCANLINES-31
+TS3_CEIL_SCANLINES = NUM_SCANLINES-47
+TS4_CEIL_SCANLINES = NUM_SCANLINES-63
 
 ;############################
 ; Bank1
@@ -108,6 +122,9 @@ VerticalBlank:
     sta PFData4
     lda #%10000000
     sta PFData5
+    ; set background color
+    lda #PFCOL_DARK
+    sta COLUBK
 
     ; wait until vertical blank period is over
 VerticalBlankWait:
@@ -125,7 +142,7 @@ DrawScreen:
 
 
     ; Y will be our scanline counter
-    ldy #191
+    ldy #NUM_SCANLINES
 ScanLoop:
     ; WSYNC is placed BEFORE all of this action takes place.
     sta WSYNC
@@ -150,7 +167,7 @@ ScanLoop:
 TunnelSection0:
     ; top 16 scanlines: 
     ; top left and top right sides of tunnel
-    cpy #191-15
+    cpy #TS1_CEIL_SCANLINES
     bcc TunnelSection1
     beq TunnelSection1
     ; calc PF0
@@ -161,11 +178,13 @@ TunnelSection0:
     ; TODO: calc upper nibble of PF5
     jmp PFDone
 TunnelSection1:
-    ; next 32 scanlines 
-    ; two middle sections of tunnel
-    cpy #191-47
+    ; next 16 scanlines 
+    cpy #TS2_CEIL_SCANLINES
     bcc TunnelSection2
     beq TunnelSection2
+    ; set bgcol
+    lda #PFCOL_LIGHT
+    sta COLUBK
     ; calc PF1
     lda PFData1
     lsr 
