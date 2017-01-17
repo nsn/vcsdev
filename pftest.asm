@@ -9,18 +9,29 @@
 ; Constants
 ;----------------------------
 VBLANK_WAIT = #43
+PFCOL_DARK  = $94
+PFCOL_LIGHT = $98
 
 ;############################
 ; Bank1
 ;############################
-    ORG $F000
 
 ;----------------------------
 ; Variables
 ;----------------------------
-Temp       = $80
-PlayfieldY = $90
+    SEG.U variables
+    ORG $80
 
+PFData0     .byte   
+PFData1     .byte  
+PFData2     .byte 
+PFData3     .byte 
+PFData4     .byte 
+PFData5     .byte 
+
+
+    SEG code
+    ORG $F000
 Reset:
 ;----------------------------
 ; Start of program
@@ -75,7 +86,7 @@ VerticalBlank:
     sta WSYNC   
     ; use duration 3rd line of VSYNC 
     ; to set the vertical blank timer
-    lda #44
+    lda VBLANK_WAIT
     sta TIM64T
     ; clear collision latches
     lda #0
@@ -83,6 +94,10 @@ VerticalBlank:
     ; end vsync period
     sta WSYNC 
     sta VSYNC
+    ;----------------
+    ; free cycles!
+    ;----------------
+
     ; wait until vertical blank period is over
 VerticalBlankWait:
     lda INTIM
@@ -97,35 +112,64 @@ DrawScreen:
     sta WSYNC
     sta VBLANK ; since A = #0
 
+    ; init PF registers
+    lda #%00011111
+    sta PFData0
+    sta PF0
+    lda #%00000000
+    sta PFData1
+    sta PFData2
+
     ; Y will be our scanline counter
     ldy #191
 ScanLoop:
     ; WSYNC is placed BEFORE all of this action takes place.
     sta WSYNC
 
-    ; load and draw left side of screen
-    lda PFDATA_0,y      ; 4
-    sta PF0             ; +3 = 7
-    lda PFDATA_1,y      ; +4 = 11
-    sta PF1             ; +3 = 14
-    lda PFDATA_2,y      ; +4 = 18
-    sta PF2             ; +3 = 21
+    ;-----------
+    ; Playfield
+    ;-----------
+  
 
-    ; load and draw right side of screen
-    ; right side starts at 40 cycles in
-    nop                 ; +2 = 23
-    nop                 ; +2 = 25
-    nop                 ; +2 = 27
-    ; start loading PF0
-    lda PFDATA_3,y      ; +4 = 31
-    ; PF0 no longer visible, safe to write
-    sta PF0             ; +3 = 34
-    lda PFDATA_4,y      ; +4 = 38
-    sta PF1             ; +3 = 41
-    lda PFDATA_5,y      ; +4 = 45
-    sta PF2             ; +3 = 48
+    ; every 4th ScanLine
+    tya
+    and #%00000011
+    bne PFDone
+ScanLineGEQ0
+    ; top 16 scanlines: -> PF0
+    cpy #191-15
+    bcc ScanLineGEQ16
+    beq ScanLineGEQ16
+    lda PFData0
+    asl 
+    ora #1
+    sta PFData0
+    jmp PFDone
+ScanLineGEQ16:
+    ; next 32 scanlines -> PF1
+    cpy #191-47
+    bcc ScanLineGEQ48
+    beq ScanLineGEQ48
+    lda PFData1
+    lsr 
+    ora #%10000000
+    sta PFData1
+    jmp PFDone
+ScanLineGEQ48:
+PFDone:
 
+    lda PFData0
+    sta PF0
+    lda PFData1
+    sta PF1
+    lda PFData2
+    sta PF2
 
+    ;-----------
+    ; End Playfield
+    ;-----------
+
+    ; work done, dec scanline counter, clean up
     DEY
     BNE ScanLoop    
 
@@ -160,8 +204,30 @@ OverScanLineWait:
 ;----------------------------
 ; Data
 ;----------------------------
-    
-    include "pftest.inc"
+
+PFData:
+
+PFData_0_L:
+    .byte #%00010000    
+    .byte #%00110000     
+    .byte #%01110000     
+    .byte #%11110000     
+
+PFData_1_L:
+    .byte #%10000000    
+    .byte #%11000000    
+    .byte #%11100000    
+    .byte #%11110000    
+    .byte #%11111000    
+    .byte #%11111100    
+    .byte #%11111110    
+    .byte #%11111111    
+
+PFData_2_L:
+    .byte #%00000001    
+    .byte #%00000011    
+    .byte #%00000111    
+    .byte #%00001111    
 
 ;----------------------------
 ; Reset/Break 
