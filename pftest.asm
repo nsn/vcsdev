@@ -201,28 +201,20 @@ TunnelSection2:
     sta COLUBK
     ; pf calculations
     jsr PFCalcTS2
-;    ; calc lower nibble of PF1
-;    lda PFData1
-;    and #MASK_LOWER_NIBBLE
-;    lsr 
-;    ora #%00001000
-;    sta tmp
-;    lda PFData1
-;    and #MASK_UPPER_NIBBLE
-;    ora tmp
-;    sta PFData1
-;    ; calc lower nibble of PF4
-;    lda PFData4
-;    and #MASK_LOWER_NIBBLE
-;    asl 
-;    ora #%00000001
-;    sta tmp
-;    lda PFData4
-;    and #MASK_UPPER_NIBBLE
-;    ora tmp
-;    sta PFData4
     jmp PFDone
 TunnelSection3:
+    ; next 16 scanlines 
+    ; 3nd tunnel section
+    cpy #TS4_CEIL_SCANLINES
+    bcc TunnelSection4
+    beq TunnelSection4
+    ; set bgcol
+    lda #PFCOL_LIGHT
+    sta COLUBK
+    ; pf calculations
+    jsr PFCalcTS3
+    jmp PFDone
+TunnelSection4:
     
 PFDone:
 
@@ -322,6 +314,9 @@ PFCalcTS2:
     ora tmp
     sta PFData4
     rts ; PFCalcTS2
+; calc playfield for tunnel segment 3
+PFCalcTS3:
+    rts ; PFCalcTS3
 
 
 ;----------------------------
