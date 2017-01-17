@@ -133,43 +133,52 @@ ScanLoop:
     ;-----------
     ; Playfield
     ;-----------
-  
-
-    ; every 4th ScanLine
-    tya
-    and #%00000011
-    bne PFDone
-ScanLineGEQ0
-    ; top 16 scanlines: -> PF0
-    cpy #191-15
-    bcc ScanLineGEQ16
-    beq ScanLineGEQ16
-    ; calc PF0
-    lda PFData0
-    asl 
-    ora #1
-    sta PFData0
-    ; calc upper nibble of PF5
-    jmp PFDone
-ScanLineGEQ16:
-    ; next 32 scanlines -> PF1
-    cpy #191-47
-    bcc ScanLineGEQ48
-    beq ScanLineGEQ48
-    lda PFData1
-    lsr 
-    ora #%10000000
-    sta PFData1
-    jmp PFDone
-ScanLineGEQ48:
-PFDone:
-
+    ; a section ( = one step) of tunnel is 4 blocks of 4 = 16 scanlines high
+ 
+    ; store left side of Playfield
     lda PFData0
     sta PF0
     lda PFData1
     sta PF1
     lda PFData2
     sta PF2
+
+    ; every 4th ScanLine
+    tya
+    and #%00000011
+    bne PFDone
+TunnelSection0:
+    ; top 16 scanlines: 
+    ; top left and top right sides of tunnel
+    cpy #191-15
+    bcc TunnelSection1
+    beq TunnelSection1
+    ; calc PF0
+    lda PFData0
+    asl 
+    ora #1
+    sta PFData0
+    ; TODO: calc upper nibble of PF5
+    jmp PFDone
+TunnelSection1:
+    ; next 32 scanlines 
+    ; two middle sections of tunnel
+    cpy #191-47
+    bcc TunnelSection2
+    beq TunnelSection2
+    ; calc PF1
+    lda PFData1
+    lsr 
+    ora #%10000000
+    sta PFData1
+    ; TODO: calc lower nibble of PF5
+    ; TODO: calc lower nibble of PF4
+    jmp PFDone
+TunnelSection2:
+ScanLineGEQ64:
+    
+PFDone:
+
 
     ;-----------
     ; End Playfield
