@@ -175,26 +175,7 @@ TunnelSection0:
     cpy #TS1_CEIL_SCANLINES
     bcc TunnelSection1
     beq TunnelSection1
-    ; calc upper nibble of PF0
-    lda PFData0
-    and #MASK_UPPER_NIBBLE
-    asl 
-    ora #%00010000
-    sta tmp
-    lda PFData0
-    and #MASK_LOWER_NIBBLE
-    ora tmp
-    sta PFData0
-    ; TODO: calc upper nibble of PF5
-    lda PFData5
-    and #MASK_UPPER_NIBBLE
-    lsr 
-    ora #%10000000
-    sta tmp
-    lda PFData5
-    and #MASK_LOWER_NIBBLE
-    ora tmp
-    sta PFData5
+    jsr PFCalcTS0
     jmp PFDone
 TunnelSection1:
     ; next 16 scanlines 
@@ -283,8 +264,35 @@ PFDone:
     sty ENAM0
     sty ENAM1
     sty ENABL
-    rts
+    rts ; DrawScreen
 
+;----------------------------
+; Playfield Calculations
+;----------------------------
+; calc playfield for tunnel segment 0
+PFCalcTS0:
+    ; calc upper nibble of PF0
+    lda PFData0
+    and #MASK_UPPER_NIBBLE
+    asl 
+    ora #%00010000
+    sta tmp
+    lda PFData0
+    and #MASK_LOWER_NIBBLE
+    ora tmp
+    sta PFData0
+    ; TODO: calc upper nibble of PF5
+    lda PFData5
+    and #MASK_UPPER_NIBBLE
+    lsr 
+    ora #%10000000
+    sta tmp
+    lda PFData5
+    and #MASK_LOWER_NIBBLE
+    ora tmp
+    sta PFData5
+    rts ; PFCalcTS0
+ 
 ;----------------------------
 ; Overscan
 ;----------------------------
@@ -297,6 +305,9 @@ OverScanLineWait:
     bne OverScanLineWait
     ; return
     rts
+
+
+
 
 ;----------------------------
 ; Data
