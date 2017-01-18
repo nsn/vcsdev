@@ -19,6 +19,9 @@ VBLANK_WAIT = #43
 NUM_SCANLINES = 191
 
 ; colors
+BGCOL_CEIL  = $e8
+BGCOL_FLOOR = $e6
+BGCOL_VOID  = $00
 PFCOL_DARK  = $94
 PFCOL_LIGHT = $98
 
@@ -28,6 +31,10 @@ TS1_CEIL_SCANLINES = NUM_SCANLINES-15
 TS2_CEIL_SCANLINES = NUM_SCANLINES-31
 TS3_CEIL_SCANLINES = NUM_SCANLINES-47
 TS4_CEIL_SCANLINES = NUM_SCANLINES-63
+TS3_FLOOR_SCANLINES = NUM_SCANLINES-90
+TS2_FLOOR_SCANLINES = NUM_SCANLINES-106
+TS1_FLOOR_SCANLINES = NUM_SCANLINES-122
+TS0_FLOOR_SCANLINES = NUM_SCANLINES-136
 
 ;############################
 ; Bank1
@@ -149,6 +156,23 @@ DrawScreen:
     ; Y will be our scanline counter
     ldy #NUM_SCANLINES
 ScanLoop:
+    ; set bgcol for scanline
+TunnelFloor:
+    cpy #TS3_FLOOR_SCANLINES
+    bcs TunnelFar
+    lda #BGCOL_FLOOR
+    sta COLUBK
+    jmp SetBGDone
+TunnelFar:
+    cpy #TS4_CEIL_SCANLINES
+    bcs TunnelCeiling
+    lda #BGCOL_VOID
+    sta COLUBK
+    jmp SetBGDone
+TunnelCeiling:
+    lda #BGCOL_CEIL
+    sta COLUBK
+SetBGDone:
     ; WSYNC is placed BEFORE all of this action takes place.
     sta WSYNC
 
@@ -184,9 +208,6 @@ TunnelSection1:
     cpy #TS2_CEIL_SCANLINES
     bcc TunnelSection2
     beq TunnelSection2
-    ; set bgcol
-    lda #PFCOL_LIGHT
-    sta COLUBK
     ; pf calculations
     jsr PFCalcTS1
     jmp PFDone
@@ -196,9 +217,6 @@ TunnelSection2:
     cpy #TS3_CEIL_SCANLINES
     bcc TunnelSection3
     beq TunnelSection3
-    ; set bgcol
-    lda #PFCOL_DARK
-    sta COLUBK
     ; pf calculations
     jsr PFCalcTS2
     jmp PFDone
@@ -208,9 +226,6 @@ TunnelSection3:
     cpy #TS4_CEIL_SCANLINES
     bcc TunnelSection4
     beq TunnelSection4
-    ; set bgcol
-    lda #PFCOL_LIGHT
-    sta COLUBK
     ; pf calculations
     jsr PFCalcTS3
     jmp PFDone
