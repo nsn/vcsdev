@@ -173,7 +173,9 @@ TunnelCeiling:
     lda #BGCOL_CEIL
     sta COLUBK
 SetBGDone:
-    ; WSYNC is placed BEFORE all of this action takes place.
+
+
+    ; WSYNC is placed BEFORE calculations
     sta WSYNC
 
     ;-----------
@@ -212,6 +214,8 @@ TunnelSection1:
     jsr PFCalcTS1
     jmp PFDone
 TunnelSection2:
+    lda PFData3
+    sta PF0
     ; next 16 scanlines 
     ; 2nd tunnel section
     cpy #TS3_CEIL_SCANLINES
@@ -230,9 +234,9 @@ TunnelSection3:
     jsr PFCalcTS3
     jmp PFDone
 TunnelSection4:
+    ; far end of tunnel
     
 PFDone:
-
 
     ;-----------
     ; End Playfield
@@ -352,6 +356,18 @@ PFCalcTS3:
     ora tmp
     sta PFData4
     rts ; PFCalcTS3
+; calc playfield for tunnel segment 4 (far end of tunnel)
+PFCalcTS4:
+    ; calc upper nibble of PF2
+    ; always empty for now
+    lda PFData2
+    and #MASK_LOWER_NIBBLE
+    sta PFData2
+    ; calc lower nibble of PF3
+    lda PFData3
+    and #MASK_UPPER_NIBBLE
+    sta PFData3
+    rts ; PFCalcTS4
 
 
 ;----------------------------
