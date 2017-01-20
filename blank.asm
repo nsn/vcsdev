@@ -1,27 +1,56 @@
-; playfield test
+; blank vcs 2600 project
 
     processor 6502
 
     include "vcs.h"
     include "macro.h"
 
-    SEG
-    ORG $F000
+;----------------------------
+; Constants
+;----------------------------
 
-Reset
+; ntsc constants
+VBLANK_WAIT = #43
+NUM_SCANLINES = 191
+
+;--- end Constants
+
+;############################
+; Bank1
+;############################
+
 ;----------------------------
 ; Variables
 ;----------------------------
+    SEG.U variables
+    ORG $80
+
+tmp         ds 2
 
 
+;--- end Variables 
+
+    SEG code
+    ORG $F000
+Reset:
 ;----------------------------
 ; Start of program
 ;----------------------------
-ClearRam
 
-    ; use CLEAN_START from <macro.h>
-    CLEAN_START
+; clear RAM
+    sei         ; disable interrupts
+    cld         ; Clear BCD math flag
+    ; set stack pointer to top of RAM
+    ldx #$FF
+    txs
 
+    lda #0
+ClearRam:
+    sta 0,x
+    dex
+    bne ClearRam
+
+; set TIA behaviour
     ; set bg color to black ($0)
     lda #$00
     sta COLUBK
@@ -29,100 +58,110 @@ ClearRam
     lda #$0E
     sta COLUPF
     ; set pf behaviour
-    lda #$00
+    lda #%00000000
     sta CTRLPF
 
-    lda #%10101011
-    sta PF1
 ;----------------------------
-; Start of Framw
+; Main Loop
 ;----------------------------
-FrameStart
-    ; vblank
-    lda #0
-    sta VBLANK
-    ; vsync
+MainLoop:
+    jsr VerticalBlank
+    jsr DrawScreen
+    jsr OverScan
+    jmp MainLoop ; loop forever
+
+;----------------------------
+; vertical blank wait
+;----------------------------
+VerticalBlank:
+    ldx #0      ; ?
     lda #2
+    sta WSYNC   ; ?
+    sta WSYNC   ; ?
+    sta WSYNC   ; ?
+    ; begin vertical sync
     sta VSYNC
-    ; 3 scanlines of vsync
-    sta WSYNC
-    sta WSYNC
-    sta WSYNC
-    ; set timer for 37 scanlines
-    ; 1 scanline = 76 CPU cycles
-    ; 37*76 = 2812, 
-    ; subtrct 14 cycles of timer overhead => 2798 cycles of wait
-    ; TIMINT64 ticks once every 64 clock cycles
-    ; 2798/64 = ~64
-    lda #43
+    ; first two lines of vsync
+    sta WSYNC   
+    sta WSYNC   
+    ; use duration 3rd line of VSYNC 
+    ; to set the vertical blank timer
+    lda VBLANK_WAIT
     sta TIM64T
-    ; blank out vsync
+    ; clear collision latches
     lda #0
+    sta CXCLR
+    ; end vsync period
+    sta WSYNC 
     sta VSYNC
+    ;----------------
+    ; free cycles!
+    ;----------------
 
-;----------------------------
-; vertical blank wait
-; put init logic here
-;----------------------------
+    ; insert per-frame initializaton code here
 
-;----------------------------
-; vertical blank wait
-;----------------------------
-VerticalBlank
-    ; loop until timer reaches 0
+    ; wait until vertical blank period is over
+VerticalBlankWait:
     lda INTIM
-    bne VerticalBlank 
-
-    ; wait for end of line
-    sta WSYNC
-    ; lda is 0, so we can use it to end VBLANK period
-    sta VBLANK
-
-    ; wait one more line so that we are sure we line up...
-    sta WSYNC
-
-    ;-----------------
-    ; activate movents here...
-    ;-----------------
-
-
+    bne VerticalBlankWait
+    rts         ; return
 
 ;----------------------------
-; Scanline loop
+; Draw visible scanlines
 ;----------------------------
-    ; y is our scanline counter
-    ldy #191
-
-Scanloop
-    ; wait for prev line to finish
+DrawScreen:
+    ; wait for last line to finish
     sta WSYNC
-    
-    ; decrease line counter in Y
-    ; lopp until y == 0
-    dey
-    bne Scanloop
+    sta VBLANK ; since A = #0
 
-    ; end of color lines
-    ; 2 for VBLANK
+
+    ; Y will be our scanline counter
+    ldy #NUM_SCANLINES
+ScanLoop:
+
+    ; WSYNC is placed BEFORE calculations
+    sta WSYNC
+
+
+    ; work done, dec scanline counter, clean up
+    DEY
+    BNE ScanLoop    
+
+    ; clear registers to prevent bleeding
     lda #2
-    ; finish last line
-    sta WSYNC
-    ; make tia output invisible for overscan
-    sta VBLANK
-
+    sta WSYNC   ; finish scanline
+    sta VBLANK  ; make TIA output blank
+    ; re-use Y which is still 0
+    sty PF0
+    sty PF1
+    sty PF2  
+    sty GRP0
+    sty GRP1
+    sty ENAM0
+    sty ENAM1
+    sty ENABL
+    rts ; DrawScreen
 
 ;----------------------------
 ; Overscan
 ;----------------------------
-    ; wait for 30 lines
+OverScan:
+    ; wait 30 scanline
     ldx #30
-OverScan
+OverScanLineWait:
     sta WSYNC
     dex
-    bne OverScan
+    bne OverScanLineWait
+    ; return
+    rts
 
-    ; jmp to start of next frame
-    jmp FrameStart
+
+
+
+;----------------------------
+; Data
+;----------------------------
+
 
 ;----------------------------
 ; Reset/Break 
