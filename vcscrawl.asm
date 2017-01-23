@@ -130,7 +130,19 @@ ScanLoop:
     sta block_no            ; +3
     ; section no = y/16
     lsr                     ; +2
-    sta section_idx         ; +3 = (14)
+    lsr                     ; +2
+    sta section_idx         ; +3 = (16)
+    tax
+
+    ; jump to proper kernel subroutine
+BREAK 
+    lda SectionPointersHI,x
+    pha
+    lda SectionPointersLO,x
+    pha
+    rts
+
+KernelEnd:
 
     ; work done, dec scanline counter, clean up
     DEY
@@ -184,31 +196,51 @@ OverScanLineWait:
 ;     1   |           |
 ;     0   |           |
 Section0:
-    rts
+    sty tmp
+    jmp KernelEnd
 
 ; dummy section, just nops
 SectionNOP:
-    rts
+    nop
+    jmp KernelEnd
 
 
 ;----------------------------
 ; Data
 ;----------------------------
 
-SectionPointers
-    .word SectionNOP  ; index  0
-    .word SectionNOP  ; index  2
-    .word SectionNOP  ; index  4
-    .word SectionNOP  ; index  6
-    .word SectionNOP  ; index  8
-    .word SectionNOP  ; index 10
-    .word SectionNOP  ; index 12
-    .word SectionNOP  ; index 14
-    .word SectionNOP  ; index 16
-    .word SectionNOP  ; index 18
-    .word SectionNOP  ; index 20
-    .word Section0    ; index 22
+    SEG data
+    ORG $FE00
 
+SectionPointersLO:
+    .byte <(SectionNOP)  ; index  0
+    .byte <SectionNOP  ; index  2
+    .byte <SectionNOP  ; index  4
+    .byte <SectionNOP  ; index  6
+    .byte <SectionNOP  ; index  8
+    .byte <SectionNOP  ; index 10
+    .byte <SectionNOP  ; index 12
+    .byte <SectionNOP  ; index 14
+    .byte <SectionNOP  ; index 16
+    .byte <SectionNOP  ; index 18
+    .byte <SectionNOP  ; index 20
+    .byte <(Section0-1)    ; index 22
+
+SectionPointersHI:
+    .byte >(SectionNOP)  ; index  0
+    .byte >SectionNOP  ; index  2
+    .byte >SectionNOP  ; index  4
+    .byte >SectionNOP  ; index  6
+    .byte >SectionNOP  ; index  8
+    .byte >SectionNOP  ; index 10
+    .byte >SectionNOP  ; index 12
+    .byte >SectionNOP  ; index 14
+    .byte >SectionNOP  ; index 16
+    .byte >SectionNOP  ; index 18
+    .byte >SectionNOP  ; index 20
+    .byte >(Section0-1)    ; index 22
+
+    ORG $FF00
 
 ;----------------------------
 ; Reset/Break 
