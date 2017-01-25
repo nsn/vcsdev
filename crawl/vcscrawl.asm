@@ -27,14 +27,12 @@ NUM_SCANLINES = 191
 
 tmp                 ds 2
 scanline            ds 1    ; current scanline
-block_no            ds 1    ; block number
-section_idx         ds 1    ; section number
-pf0_data            ds 1    ; Playfield register shadow vars
-pf1_data            ds 1    ; Playfield register shadow vars
-pf2_data            ds 1    ; Playfield register shadow vars
-pf3_data            ds 1    ; Playfield register shadow vars
-pf4_data            ds 1    ; Playfield register shadow vars
-pf5_data            ds 1    ; Playfield register shadow vars
+PF0_data_ptr        ds 1
+PF1_data_ptr        ds 1
+PF2_data_ptr        ds 1
+PF3_data_ptr        ds 1
+PF4_data_ptr        ds 1
+PF5_data_ptr        ds 1
 
 
 ;--- end Variables 
@@ -107,7 +105,16 @@ VerticalBlank:
     ; free cycles!
     ;----------------
 
+    ; set playfield data pointers 
+    ; according to position in maze
+    lda #>PFData_0_W        ; +2
+    sta PF0_data_ptr+1      ; +3
+    lda #<PFData_0_W        ; +2
+    sta PF0_data_ptr        ; +3 (10)
+
     ; insert per-frame initializaton code here
+
+
 
     ; wait until vertical blank period is over
 VerticalBlankWait:
@@ -130,29 +137,27 @@ ScanLoop:
     ; WSYNC is placed BEFORE calculations
     sta WSYNC
     ; save scanline counter
-    sty scanline
+    sty scanline            ; +3
 
     ; block no = y / 4
     tya                     ; +2
     lsr                     ; +2
     lsr                     ; +2
-    ; transver block_no to y
-    tay                     ; 
-    ;sta block_no            ; +3
+    ; transfer block_no to y
+    tay                     ; +2 (11)
+
     ; section no = y/16
     lsr                     ; +2
     lsr                     ; +2
-    ;sta section_idx         ; +3 = (16)
     ; section_idx to x
-    tax
+    tax                     ; +2 (17)
 
     ; jump to proper kernel subroutine
-BREAK 
-    lda SectionPointersHI,x
-    pha
-    lda SectionPointersLO,x
-    pha
-    rts
+    lda SectionPointersHI,x ; +4
+    pha                     ; +3       
+    lda SectionPointersLO,x ; +4
+    pha                     ; +3
+    rts                     ; +6 (37)
 
 KernelEnd:
 
@@ -195,6 +200,9 @@ OverScanLineWait:
 ; each kernel is responsible for (at least one) 'section'
 ; of the screen, a section most of the time consisting of
 ; 4 blocks of 4 scanlines each
+;
+; Kernels expect block_no in y and section_no in x
+;
 ; section | scanlines | desc
 ;    11   | 191-176   | top of tunnel, nearest
 ;    10   |           |
@@ -209,11 +217,7 @@ OverScanLineWait:
 ;     1   |           |
 ;     0   |           |
 Section0:
-    lda #>PFData_0_W
-    sta tmp+1
-    lda #<PFData_0_W
-    sta tmp
-    lda (tmp),y
+    lda (PF0_data_ptr),y
     sta PF0
     jmp KernelEnd
 
