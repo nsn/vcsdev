@@ -112,6 +112,30 @@ VerticalBlank:
     lda #<PFData_0_W        ; +2
     sta PF0_data_ptr        ; +3 (10)
 
+    lda #>PFData_1_W        ; +2
+    sta PF1_data_ptr+1      ; +3
+    lda #<PFData_1_W        ; +2
+    sta PF1_data_ptr        ; +3 (10)
+
+    lda #>PFData_2_W        ; +2
+    sta PF2_data_ptr+1      ; +3
+    lda #<PFData_2_W        ; +2
+    sta PF2_data_ptr        ; +3 (10)
+
+    lda #>PFData_3_W        ; +2
+    sta PF3_data_ptr+1      ; +3
+    lda #<PFData_3_W        ; +2
+    sta PF3_data_ptr        ; +3 (10)
+
+    lda #>PFData_4_W        ; +2
+    sta PF4_data_ptr+1      ; +3
+    lda #<PFData_4_W        ; +2
+    sta PF4_data_ptr        ; +3 (10)
+
+    lda #>PFData_5_W        ; +2
+    sta PF5_data_ptr+1      ; +3
+    lda #<PFData_5_W        ; +2
+    sta PF5_data_ptr        ; +3 (10)
     ; insert per-frame initializaton code here
 
 
@@ -218,6 +242,8 @@ OverScanLineWait:
 ;     0   |           |
 Section0:
     lda (PF0_data_ptr),y
+    sta PF0
+    lda (PF3_data_ptr),y
     sta PF0
     jmp KernelEnd
 
