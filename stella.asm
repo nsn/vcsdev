@@ -10,8 +10,7 @@
 ;----------------------------
 
 ; ntsc constants
-VBLANK_WAIT = 41
-NUM_SCANLINES = 191
+VBLANK_WAIT = 44
 
 ;--- end Constants
 
@@ -30,12 +29,6 @@ NUM_SCANLINES = 191
     ORG $80
 
 tmp                 ds 2
-scanline            ds 1    ; current scanline
-Sec0_PF_l_ptr       ds 2
-Sec0_PF_r_ptr       ds 2
-Sec1_PF_l_ptr       ds 2
-Sec1_PF_r_ptr       ds 2
-
 
 ;--- end Variables 
 
@@ -75,7 +68,6 @@ ClearRam:
 ;----------------------------
 MainLoop:
     jsr VerticalBlank
-    jsr GameState
     jsr DrawScreen
     jsr OverScan
     jmp MainLoop ; loop forever
@@ -92,8 +84,6 @@ VerticalBlank:
     ; first two lines of vsync
     sta WSYNC   
     sta WSYNC   
-    ; use duration 3rd line of VSYNC 
-    ; to set the vertical blank timer
     lda #VBLANK_WAIT
     sta TIM64T
 
@@ -102,13 +92,6 @@ VerticalBlank:
     sta WSYNC 
     sta VSYNC
     rts ;--- VerticalBlank
-
-;----------------------------
-; calculate game state for this frame
-;----------------------------
-GameState:
-
-    rts ;--- GameState
 
 ;----------------------------
 ; Draw visible scanlines
@@ -120,71 +103,23 @@ DrawScreen:
     sta WSYNC
     sta VBLANK ; since A = #0
 
-
     ; Y will be our scanline counter
     ; ---
     ; 16 Scanlines of Section0
     ldy #15
 Section0:
     sta WSYNC
-    lda (Sec0_PF_l_ptr),y   ; +5
-    and #%1111000           ; +2
-    sta PF0                 ; +3 
-    lda #0                  ; +2    
-    sta PF1                 ; +3 
-    sta PF2                 ; +3 (18) 
-
-    ; wait 10 cycles
     SLEEP 16
-    lda #0                  ;    
-    sta PF0                 ; +3 (8)
-    sta PF1                 ; +3 (8)
-    lda (Sec0_PF_r_ptr),y
-    and #%11110000
-    sta PF2
-
-    SLEEP 10 
-    ;lda (PF3_data_ptr),y
-    ;sta PF0
     dey
     bne Section0
-    ; ---
-    ; 16 Scanlines of Section0
-    ldy #15
-Section1:
-    sta WSYNC
-    lda #%1111000
-    sta PF0
 
-    lda (Sec1_PF_l_ptr),y   ; +5
-    and #%1111000           ; +2
-    sta PF1                 ; +3 
-    lda #0                  ; +2    
-    sta PF2                 ; +3 (18) 
-
-    ; wait 10 cycles
-    SLEEP 16
-
-    lda #0                  ;    
-    sta PF0                 ; +3 (8)
-    lda (Sec1_PF_r_ptr),y
-    sta PF1                 ; +3 (8)
-    and #%11110000
-    sta PF2
-
-    SLEEP 10 
-    ;lda (PF3_data_ptr),y
-    ;sta PF0
-    dey
-    bne Section1
-
-    ldy #191-32
+    ldy #191-16
 ScanLoop:
     lda #0
     sta PF0
     sta PF1
     sta PF2
-    ; WSYNC is placed BEFORE calculations
+
     sta WSYNC
 
     ; work done, dec scanline counter, clean up
@@ -218,13 +153,6 @@ OverScanLineWait:
     bne OverScanLineWait
     ; return
     rts
-
-
-;----------------------------
-; Data
-;----------------------------
-
-
 
 ;----------------------------
 ; Reset/Break 
