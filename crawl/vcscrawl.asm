@@ -133,7 +133,6 @@ DrawScreen:
     ldy #15
 Section0:
     sta WSYNC
-BREAK:
     lda (Sec0_PF_l_ptr),y   ; +5
     and #%11110000          ; +2
     sta PF0                 ; +3 
@@ -150,9 +149,9 @@ BREAK:
     lda (Sec0_PF_r_ptr),y
     and #%11110000
     sta PF2
-
+BREAK:
     dey
-    bne Section0
+    bpl Section0
     ; ---
     ; 16 Scanlines of Section0
     ldy #15
