@@ -123,7 +123,7 @@ GameState:
     SET_POINTER Sec1_PF_r_ptr, PF_1_1
 
     SET_POINTER Sec2_PF_l_ptr, PF_1_1 
-    SET_POINTER Sec2_PF_r_ptr, PF_1_1
+    SET_POINTER Sec2_PF_r_ptr, PF_1_0
 
     ; set background color
     ; according to position in maze
