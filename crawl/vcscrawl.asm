@@ -90,7 +90,7 @@ MainLoop:
 VerticalBlank:
     ldx #0      
     lda #2
-    sta WSYNC   ; ?
+    sta WSYNC   ;
     ; begin vertical sync
     sta VSYNC
     ; first two lines of vsync
@@ -145,8 +145,10 @@ DrawScreen:
     ldy #15
 Section0:
     sta WSYNC
+    ; bg color
+    lda BGCol_even
+    sta COLUBK
     lda (Sec0_PF_l_ptr),y   ; +5
-    and #%11110000          ; +2
     sta PF0                 ; +3 
     lda #0                  ; +2    
     sta PF1                 ; +3 
@@ -161,10 +163,6 @@ Section0:
     lda (Sec0_PF_r_ptr),y
     and #%11110000
     sta PF2
-    ; bg color
-    lda BGCol_even
-    sta COLUBK
-BREAK
     dey
     bpl Section0
     ; ---
@@ -172,6 +170,7 @@ BREAK
     ldy #15
 Section1:
     sta WSYNC
+BREAK:
     lda #%11110000
     sta PF0
 
@@ -182,7 +181,7 @@ Section1:
     sta PF2                 ; +3 (18) 
 
     ; wait 10 cycles
-    SLEEP 16
+    SLEEP 12
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
