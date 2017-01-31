@@ -10,7 +10,7 @@
 ;----------------------------
 
 ; ntsc constants
-VBLANK_WAIT = 44
+VBLANK_WAIT = 43
 
 ;--- end Constants
 
