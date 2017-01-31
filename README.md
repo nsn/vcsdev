@@ -18,6 +18,8 @@ needs to have guard and guard-shell installed:
 
 *colors*: http://www.randomterrain.com/atari-2600-memories-tia-color-charts.html
 
+*TIA timing*: http://www.randomterrain.com/atari-2600-memories-tutorial-andrew-davie-17.html#timing_diagram
+
 
 ### Editors
 
