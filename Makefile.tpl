@@ -1,5 +1,5 @@
 
-STELLA=Stella -grabmouse 0
+STELLA=Stella
 DASM=dasm
 FLAGS=-f3 -v5 -I$(PATH)/include/ -v4
 SRC=$(shell find . -maxdepth 1  -name \*.asm)
@@ -14,7 +14,7 @@ all: $(OBJECTS)
 
 .PHONY:
 run-%: %.bin
-	$(STELLA) $<
+	$(STELLA) -grabmouse 0 $<
 
 .PHONY:
 debug-%: %.bin
