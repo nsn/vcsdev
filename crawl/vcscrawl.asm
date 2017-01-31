@@ -290,25 +290,167 @@ Section3Top:
     bpl Section3Top
 
 
-
     ldy #191-48
-ScanLoop:
-    ; WSYNC is placed BEFORE calculations
+Burn:
     sta WSYNC
+    ; bg color
+    lda #BGCOL_FAR
+    sta COLUBK
+
     lda #0
     sta PF0
     sta PF1
     sta PF2
 
-    ; work done, dec scanline counter, clean up
-    DEY
-    BNE ScanLoop    
+    dey
+    bpl Burn
 
+;    ; ---
+;    ; 32 Scanlines of far end of tunnel
+;    ldy #31
+;FarEnd:
+;    sta WSYNC
+;    ; bg color
+;    lda #BGCOL_FAR
+;    sta COLUBK
+;
+;    lda #0
+;    sta PF0
+;    sta PF1
+;    sta PF2
+;
+;    dey
+;    bpl FarEnd
+;
+;
+;    ; ---
+;    ; 16 Scanlines of Section3Bottom
+;    ldy #15
+;Section3Bottom:
+;    sta WSYNC
+;    lda #%11111111
+;    sta PF0
+;    sta PF1                 ; +3 
+;    ; bg color
+;    lda BGCol_odd
+;    sta COLUBK
+;
+;    lda (Sec3_top_l_ptr),y   ; +5
+;    and #%00001111          ; +2
+;    sta PF2                 ; +3 (18) 
+;
+;    ; wait for PF1 to finish drawing
+;    SLEEP 12
+;
+;    lda #0                  ;    
+;    sta PF0                 ; +3 (8)
+;    lda (Sec3_top_r_ptr),y
+;    ora #%00001111
+;    sta PF1                 ; +3 (8)
+;    lda #%11111111
+;    sta PF2
+;
+;    dey
+;    bpl Section3Bottom
+;
+;    ; ---
+;    ; 16 Scanlines of Section2Bottom
+;    ldy #15
+;Section2Bottom:
+;    sta WSYNC
+;    lda #%11110000
+;    sta PF0
+;    ; bg color
+;    lda BGCol_even
+;    sta COLUBK
+;
+;    lda (Sec2_top_l_ptr),y   ; +5
+;    ora #%11110000          ; +2
+;    sta PF1                 ; +3 
+;    lda #0                  ; +2    
+;    sta PF2                 ; +3 (18) 
+;
+;    ; wait for PF1 to finish drawing
+;    SLEEP 12
+;
+;    lda #0                  ;    
+;    sta PF0                 ; +3 (8)
+;    lda (Sec2_top_r_ptr),y
+;    and #%00001111
+;    sta PF1                 ; +3 (8)
+;    lda #%11111111
+;    sta PF2
+;
+;    dey
+;    bpl Section2Bottom
+;
+;    ; ---
+;    ; 16 Scanlines of Section1Bottom
+;    ldy #15
+;Section1Bottom:
+;    sta WSYNC
+;    lda #%11110000
+;    sta PF0
+;
+;    ; bg color
+;    lda BGCol_odd
+;    sta COLUBK
+;
+;    lda (Sec1_top_l_ptr),y   ; +5
+;    and #%11110000          ; +2
+;    sta PF1                 ; +3 
+;    lda #0                  ; +2    
+;    sta PF2                 ; +3 (18) 
+;
+;    ; wait for PF1 to finish drawing
+;    SLEEP 12
+;
+;    lda #0                  ;    
+;    sta PF0                 ; +3 (8)
+;    sta PF1                 ; +3 (8)
+;    lda (Sec1_top_r_ptr),y
+;    ora #%11110000
+;    sta PF2
+;
+;    dey
+;    bpl Section1Bottom
+;
+;
+;    ; ---
+;    ; 16 Scanlines of Section0Bottom
+;    ldy #15
+;Section0Bottom:
+;    sta WSYNC
+;    ; bg color
+;    lda BGCol_even
+;    sta COLUBK
+;    lda (Sec0_top_l_ptr),y   ; +5
+;    sta PF0                 ; +3 
+;    lda #0                  ; +2    
+;    sta PF1                 ; +3 
+;    sta PF2                 ; +3 (18) 
+;    ; wait for PF0 to finish drawing
+;    SLEEP 16
+;    lda #0                  ;    
+;    sta PF0                 ; +3 (8)
+;    sta PF1                 ; +3 (8)
+;    ; wait for P23 to finish drawing
+;    SLEEP 8
+;    lda (Sec0_top_r_ptr),y
+;    and #%11110000
+;    sta PF2
+;    dey
+;    bpl Section0Bottom
+
+
+
+BREAK:
     ; clear registers to prevent bleeding
     lda #2
     sta WSYNC   ; finish scanline
     sta VBLANK  ; make TIA output blank
     ; re-use Y which is still 0
+    ldy #0
     sty PF0
     sty PF1
     sty PF2  
