@@ -216,7 +216,7 @@ BREAK:
     sta COLUBK
 
     lda (Sec2_PF_l_ptr),y   ; +5
-    and #%11110000          ; +2
+    ora #%11110000          ; +2
     sta PF1                 ; +3 
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
@@ -226,9 +226,10 @@ BREAK:
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
-    sta PF1                 ; +3 (8)
     lda (Sec2_PF_r_ptr),y
-    ora #%11110000
+    and #%00001111
+    sta PF1                 ; +3 (8)
+    lda #%11111111
     sta PF2
 
     dey
