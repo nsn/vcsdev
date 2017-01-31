@@ -37,6 +37,9 @@ Sec0_PF_l_ptr       ds 2
 Sec0_PF_r_ptr       ds 2
 Sec1_PF_l_ptr       ds 2
 Sec1_PF_r_ptr       ds 2
+Sec2_PF_l_ptr       ds 2
+Sec2_PF_r_ptr       ds 2
+
 BGCol_odd           ds 1
 BGCol_even          ds 1
 
@@ -117,7 +120,10 @@ GameState:
     SET_POINTER Sec0_PF_r_ptr, PF_1_1
 
     SET_POINTER Sec1_PF_l_ptr, PF_1_1 
-    SET_POINTER Sec1_PF_r_ptr, PF_1_0
+    SET_POINTER Sec1_PF_r_ptr, PF_1_1
+
+    SET_POINTER Sec2_PF_l_ptr, PF_1_1 
+    SET_POINTER Sec2_PF_r_ptr, PF_1_1
 
     ; set background color
     ; according to position in maze
@@ -165,14 +171,18 @@ Section0:
     sta PF2
     dey
     bpl Section0
+
     ; ---
-    ; 16 Scanlines of Section0
+    ; 16 Scanlines of Section1
     ldy #15
 Section1:
     sta WSYNC
-BREAK:
     lda #%11110000
     sta PF0
+
+    ; bg color
+    lda BGCol_odd
+    sta COLUBK
 
     lda (Sec1_PF_l_ptr),y   ; +5
     and #%11110000          ; +2
@@ -180,33 +190,59 @@ BREAK:
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
 
-    ; wait 10 cycles
+    ; wait for PF1 to finish drawing
     SLEEP 12
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
-    lda (Sec1_PF_r_ptr),y
     sta PF1                 ; +3 (8)
-    and #%11110000
+    lda (Sec1_PF_r_ptr),y
+    ora #%11110000
     sta PF2
 
-    ; bg color
-    lda BGCol_odd
-    sta COLUBK
-    SLEEP 10 
-    ;lda (PF3_data_ptr),y
-    ;sta PF0
     dey
-    bne Section1
+    bpl Section1
 
-    ldy #191-32
+    ; ---
+    ; 16 Scanlines of Section2
+    ldy #15
+Section2:
+    sta WSYNC
+BREAK:
+    lda #%11110000
+    sta PF0
+    ; bg color
+    lda BGCol_even
+    sta COLUBK
+
+    lda (Sec2_PF_l_ptr),y   ; +5
+    and #%11110000          ; +2
+    sta PF1                 ; +3 
+    lda #0                  ; +2    
+    sta PF2                 ; +3 (18) 
+
+    ; wait for PF1 to finish drawing
+    SLEEP 12
+
+    lda #0                  ;    
+    sta PF0                 ; +3 (8)
+    sta PF1                 ; +3 (8)
+    lda (Sec2_PF_r_ptr),y
+    ora #%11110000
+    sta PF2
+
+    dey
+    bpl Section2
+
+
+    ldy #191-48
 ScanLoop:
+    ; WSYNC is placed BEFORE calculations
+    sta WSYNC
     lda #0
     sta PF0
     sta PF1
     sta PF2
-    ; WSYNC is placed BEFORE calculations
-    sta WSYNC
 
     ; work done, dec scanline counter, clean up
     DEY
