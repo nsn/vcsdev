@@ -132,15 +132,24 @@ GameState:
     ; according to position in maze
     SET_POINTER Sec0_top_l_ptr, PF_1_0 
     SET_POINTER Sec0_top_r_ptr, PF_1_1
+    SET_POINTER Sec0_btm_l_ptr, PF_1_0 
+    SET_POINTER Sec0_btm_r_ptr, PF_1_1
 
     SET_POINTER Sec1_top_l_ptr, PF_1_1 
     SET_POINTER Sec1_top_r_ptr, PF_1_1
+    SET_POINTER Sec1_btm_l_ptr, PF_1_1 
+    SET_POINTER Sec1_btm_r_ptr, PF_1_1
 
     SET_POINTER Sec2_top_l_ptr, PF_1_1 
     SET_POINTER Sec2_top_r_ptr, PF_1_0
+    SET_POINTER Sec2_btm_l_ptr, PF_1_1 
+    SET_POINTER Sec2_btm_r_ptr, PF_1_0
 
     SET_POINTER Sec3_top_l_ptr, PF_1_0 
     SET_POINTER Sec3_top_r_ptr, PF_1_0
+    SET_POINTER Sec3_btm_l_ptr, PF_1_0 
+    SET_POINTER Sec3_btm_r_ptr, PF_1_0
+
     ; set background color
     ; according to position in maze
     lda #BGCOL_LIGHT
@@ -163,9 +172,9 @@ DrawScreen:
 
     ; Y will be our scanline counter
     ; ---
-    ; 16 Scanlines of Section0
+    ; 16 Scanlines of Section0Top
     ldy #15
-Section0:
+Section0Top:
     sta WSYNC
     ; bg color
     lda BGCol_even
@@ -186,12 +195,12 @@ Section0:
     and #%11110000
     sta PF2
     dey
-    bpl Section0
+    bpl Section0Top
 
     ; ---
-    ; 16 Scanlines of Section1
+    ; 16 Scanlines of Section1Top
     ldy #15
-Section1:
+Section1Top:
     sta WSYNC
     lda #%11110000
     sta PF0
@@ -217,12 +226,12 @@ Section1:
     sta PF2
 
     dey
-    bpl Section1
+    bpl Section1Top
 
     ; ---
-    ; 16 Scanlines of Section2
+    ; 16 Scanlines of Section2Top
     ldy #15
-Section2:
+Section2Top:
     sta WSYNC
     lda #%11110000
     sta PF0
@@ -248,12 +257,12 @@ Section2:
     sta PF2
 
     dey
-    bpl Section2
+    bpl Section2Top
 
     ; ---
-    ; 16 Scanlines of Section3
+    ; 16 Scanlines of Section3Top
     ldy #15
-Section3:
+Section3Top:
     sta WSYNC
     lda #%11111111
     sta PF0
@@ -278,7 +287,7 @@ Section3:
     sta PF2
 
     dey
-    bpl Section3
+    bpl Section3Top
 
 
 
