@@ -131,8 +131,10 @@ GameState:
     ; set playfield data pointers 
     ; according to position in maze
     SET_POINTER Sec0_top_l_ptr, PF_1_0 
+        SET_POINTER Sec0_top_l_ptr, PF_NONE
     SET_POINTER Sec0_top_r_ptr, PF_1_1
     SET_POINTER Sec0_btm_l_ptr, PF_0_0 
+        SET_POINTER Sec0_btm_l_ptr, PF_NONE
     SET_POINTER Sec0_btm_r_ptr, PF_0_1
 
     SET_POINTER Sec1_top_l_ptr, PF_1_1 
@@ -142,8 +144,10 @@ GameState:
 
     SET_POINTER Sec2_top_l_ptr, PF_1_1 
     SET_POINTER Sec2_top_r_ptr, PF_1_0
+        SET_POINTER Sec2_top_r_ptr, PF_NONE
     SET_POINTER Sec2_btm_l_ptr, PF_0_1 
     SET_POINTER Sec2_btm_r_ptr, PF_0_0
+        SET_POINTER Sec2_btm_r_ptr, PF_NONE
 
     SET_POINTER Sec3_top_l_ptr, PF_1_0 
     SET_POINTER Sec3_top_r_ptr, PF_1_0
