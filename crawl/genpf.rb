@@ -25,16 +25,15 @@ hdirs = {
 }
 
 count = 0
-bytes.each { |name, shifts| 
-    hdirs.each { |hdir, hflip| 
-        raw.each { |vdir, arr|
-            enum = hflip ? arr.each : arr.reverse_each
-            puts "PF_%s_%s_%s:" % [ name, hdir, vdir ]
-            enum.each { |b|
-                4.times {
-                    puts "    .byte #%%%08b" % (b << shifts)
-                    count += 1
-                }
+hdirs.each { |hdir, hflip| 
+    raw.each { |vdir, arr|
+        enum = hflip ? arr.each : arr.reverse_each
+        puts "PF_%s_%s:" % [ hdir, vdir ]
+        enum.each { |b|
+            byte = (b << 4) | b
+            4.times {
+                puts "    .byte #%%%08b" % byte
+                count += 1
             }
         }
     }
