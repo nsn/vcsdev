@@ -33,13 +33,26 @@ BGCOL_LIGHT = $E8
     ORG $80
 
 tmp                 ds 2
+; wall section pointers:
+; 4*2*2 = 16 bytes
 Sec0_PF_l_ptr       ds 2
 Sec0_PF_r_ptr       ds 2
 Sec1_PF_l_ptr       ds 2
 Sec1_PF_r_ptr       ds 2
 Sec2_PF_l_ptr       ds 2
 Sec2_PF_r_ptr       ds 2
+Sec3_PF_l_ptr       ds 2
+Sec3_PF_r_ptr       ds 2
+Sec4_PF_l_ptr       ds 2
+Sec4_PF_r_ptr       ds 2
+Sec5_PF_l_ptr       ds 2
+Sec5_PF_r_ptr       ds 2
+Sec6_PF_l_ptr       ds 2
+Sec6_PF_r_ptr       ds 2
+Sec7_PF_l_ptr       ds 2
+Sec7_PF_r_ptr       ds 2
 
+; BGColor value, 2 bytess
 BGCol_odd           ds 1
 BGCol_even          ds 1
 
@@ -125,6 +138,8 @@ GameState:
     SET_POINTER Sec2_PF_l_ptr, PF_1_1 
     SET_POINTER Sec2_PF_r_ptr, PF_1_0
 
+    SET_POINTER Sec3_PF_l_ptr, PF_1_0 
+    SET_POINTER Sec3_PF_r_ptr, PF_1_0
     ; set background color
     ; according to position in maze
     lda #BGCOL_LIGHT
@@ -208,7 +223,6 @@ Section1:
     ldy #15
 Section2:
     sta WSYNC
-BREAK:
     lda #%11110000
     sta PF0
     ; bg color
@@ -234,6 +248,38 @@ BREAK:
 
     dey
     bpl Section2
+
+    ; ---
+    ; 16 Scanlines of Section3
+    ldy #15
+Section3:
+    sta WSYNC
+BREAK:
+    lda #%11111111
+    sta PF0
+    sta PF1                 ; +3 
+    ; bg color
+    lda BGCol_odd
+    sta COLUBK
+
+    lda (Sec3_PF_l_ptr),y   ; +5
+    and #%00001111          ; +2
+    sta PF2                 ; +3 (18) 
+
+    ; wait for PF1 to finish drawing
+    SLEEP 12
+
+    lda #0                  ;    
+    sta PF0                 ; +3 (8)
+    lda (Sec3_PF_r_ptr),y
+    ora #%00001111
+    sta PF1                 ; +3 (8)
+    lda #%11111111
+    sta PF2
+
+    dey
+    bpl Section3
+
 
 
     ldy #191-48
