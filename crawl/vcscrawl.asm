@@ -13,6 +13,9 @@
 VBLANK_WAIT = 42
 NUM_SCANLINES = 191
 
+BGCOL_DARK = $E4
+BGCOL_LIGHT = $E8
+
 ;--- end Constants
 
 ;----------------------------
@@ -34,6 +37,8 @@ Sec0_PF_l_ptr       ds 2
 Sec0_PF_r_ptr       ds 2
 Sec1_PF_l_ptr       ds 2
 Sec1_PF_r_ptr       ds 2
+BGCol_odd           ds 1
+BGCol_even          ds 1
 
 
 ;--- end Variables 
@@ -114,6 +119,14 @@ GameState:
     SET_POINTER Sec1_PF_l_ptr, PF_1_1 
     SET_POINTER Sec1_PF_r_ptr, PF_1_0
 
+    ; set background color
+    ; according to position in maze
+    lda #BGCOL_LIGHT
+    sta BGCol_odd
+    lda #BGCOL_DARK
+    sta BGCol_even
+    sta COLUBK
+
     rts ;--- GameState
 
 ;----------------------------
@@ -123,7 +136,6 @@ DrawScreen:
     ; wait until vertical blank period is over
     lda INTIM
     bne DrawScreen
-    sta WSYNC
     sta VBLANK ; since A = #0
 
 
@@ -145,11 +157,14 @@ Section0:
     sta PF0                 ; +3 (8)
     sta PF1                 ; +3 (8)
     ; wait for P23 to finish drawing
-    SLEEP 10
+    SLEEP 8
     lda (Sec0_PF_r_ptr),y
     and #%11110000
     sta PF2
-BREAK:
+    ; bg color
+    lda BGCol_even
+    sta COLUBK
+BREAK
     dey
     bpl Section0
     ; ---
@@ -176,6 +191,9 @@ Section1:
     and #%11110000
     sta PF2
 
+    ; bg color
+    lda BGCol_odd
+    sta COLUBK
     SLEEP 10 
     ;lda (PF3_data_ptr),y
     ;sta PF0
@@ -230,41 +248,6 @@ OverScanLineWait:
 
     include "pfdata.inc"
 
-HI_W_I:
-    .byte #%11110000    
-    .byte #%11110000    
-    .byte #%11110000    
-    .byte #%11110000    
-    .byte #%01110000    
-    .byte #%01110000    
-    .byte #%01110000    
-    .byte #%01110000    
-    .byte #%00110000    
-    .byte #%00110000    
-    .byte #%00110000    
-    .byte #%00110000    
-    .byte #%00010000    
-    .byte #%00010000    
-    .byte #%00010000    
-    .byte #%00010000    
-
-HI_W_N:
-    .byte #%11110000    
-    .byte #%11110000    
-    .byte #%11110000    
-    .byte #%11110000    
-    .byte #%11100000    
-    .byte #%11100000    
-    .byte #%11100000    
-    .byte #%11100000    
-    .byte #%11000000    
-    .byte #%11000000    
-    .byte #%11000000    
-    .byte #%11000000    
-    .byte #%10000000    
-    .byte #%10000000    
-    .byte #%10000000    
-    .byte #%10000000    
 
 
 ;----------------------------
