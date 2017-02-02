@@ -34,8 +34,29 @@ BGCOL_FAR = $00
     ORG $80
 
 tmp                 ds 2
+; shadow registers
+SWCHA_Shadow        ds 1
+; player data
+Player_Pos_X        ds 1
+Player_Pos_Y        ds 1
+Player_Orientation  ds 1
+; maze data
+; 9*2 = 18 bytes
+Maze_a_a_ptr        ds 2
+Maze_a_b_ptr        ds 2
+Maze_a_c_ptr        ds 2
+Maze_b_a_ptr        ds 2
+Maze_b_b_ptr        ds 2
+Maze_b_c_ptr        ds 2
+Maze_c_a_ptr        ds 2
+Maze_c_b_ptr        ds 2
+Maze_c_c_ptr        ds 2
 ; wall section pointers:
 ; 4*2*2 = 16 bytes
+; TODO: remove the need for btm ptrs,
+; as upper and lower part of section walls
+; has to be equal, just inverted
+; would also reduce pfdata ROM size
 Sec0_top_l_ptr       ds 2
 Sec0_top_r_ptr       ds 2
 Sec0_btm_l_ptr       ds 2
@@ -52,8 +73,7 @@ Sec3_top_l_ptr       ds 2
 Sec3_top_r_ptr       ds 2
 Sec3_btm_l_ptr       ds 2
 Sec3_btm_r_ptr       ds 2
-
-; BGColor value, 2 bytess
+; BGColor value, 2 bytes
 BGCol_odd           ds 1
 BGCol_even          ds 1
 
@@ -90,6 +110,7 @@ ClearRam:
     ; set pf behaviour
     lda #%00000000
     sta CTRLPF
+
 
 ;----------------------------
 ; Main Loop
@@ -128,6 +149,36 @@ VerticalBlank:
 ; calculate game state for this frame
 ;----------------------------
 GameState:
+    ; joystick input
+    lda SWCHA
+    ; break if nothing has changed
+    cmp SWCHA_Shadow
+    beq InputCheckEnd
+    ; store new SWCHA state
+    sta SWCHA_Shadow
+    ; Player orientation, 
+    ; joystick left/right
+CheckRight:
+    and #%10000000
+    bne CheckLeft
+    inc Player_Orientation
+CheckLeft:
+    lda SWCHA_Shadow
+    and #%01000000
+    bne CheckUp
+    dec Player_Orientation
+CheckUp:
+CheckDown:
+    ; Player Position
+    ; joystick up/down
+    lda #1
+    sta Player_Pos_X 
+    lda #4
+    sta Player_Pos_Y
+
+InputCheckEnd:
+
+
     ; set playfield data pointers 
     ; according to position in maze
     SET_POINTER Sec0_top_l_ptr, PF_1_0 
@@ -476,6 +527,15 @@ OverScanLineWait:
 
     include "pfdata.inc"
 
+MAZE_A_A_0:
+    .byte #%11111111
+    .byte #%11111111
+    .byte #%11111111
+    .byte #%10110111
+    .byte #%10000000
+    .byte #%11101101
+    .byte #%11111111
+    .byte #%11111111
 
 
 ;----------------------------
