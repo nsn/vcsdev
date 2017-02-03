@@ -57,14 +57,14 @@ Maze_c_c_ptr        ds 2
 ; as upper and lower part of section walls
 ; has to be equal, just inverted
 ; would also reduce pfdata ROM size
-Sec0_top_l_ptr       ds 2
-Sec0_top_r_ptr       ds 2
-Sec1_top_l_ptr       ds 2
-Sec1_top_r_ptr       ds 2
-Sec2_top_l_ptr       ds 2
-Sec2_top_r_ptr       ds 2
-Sec3_top_l_ptr       ds 2
-Sec3_top_r_ptr       ds 2
+Sec0_l_ptr       ds 2
+Sec0_r_ptr       ds 2
+Sec1_l_ptr       ds 2
+Sec1_r_ptr       ds 2
+Sec2_l_ptr       ds 2
+Sec2_r_ptr       ds 2
+Sec3_l_ptr       ds 2
+Sec3_r_ptr       ds 2
 ; BGColor value, 2 bytes
 BGCol_odd           ds 1
 BGCol_even          ds 1
@@ -201,19 +201,19 @@ InputCheckEnd:
 
     ; set playfield data pointers 
     ; according to position in maze
-    SET_POINTER Sec0_top_l_ptr, PF_1_0 
-        SET_POINTER Sec0_top_l_ptr, PF_NONE
-    SET_POINTER Sec0_top_r_ptr, PF_1_1
+    SET_POINTER Sec0_l_ptr, PF_1_0 
+        SET_POINTER Sec0_l_ptr, PF_NONE
+    SET_POINTER Sec0_r_ptr, PF_1_1
 
-    SET_POINTER Sec1_top_l_ptr, PF_1_1 
-    SET_POINTER Sec1_top_r_ptr, PF_1_1
+    SET_POINTER Sec1_l_ptr, PF_1_1 
+    SET_POINTER Sec1_r_ptr, PF_1_1
 
-    SET_POINTER Sec2_top_l_ptr, PF_1_1 
-    SET_POINTER Sec2_top_r_ptr, PF_1_0
-        SET_POINTER Sec2_top_r_ptr, PF_NONE
+    SET_POINTER Sec2_l_ptr, PF_1_1 
+    SET_POINTER Sec2_r_ptr, PF_1_0
+        SET_POINTER Sec2_r_ptr, PF_NONE
 
-    SET_POINTER Sec3_top_l_ptr, PF_1_0 
-    SET_POINTER Sec3_top_r_ptr, PF_1_0
+    SET_POINTER Sec3_l_ptr, PF_1_0 
+    SET_POINTER Sec3_r_ptr, PF_1_0
 
     ; set background color
     ; according to position in maze
@@ -244,7 +244,7 @@ Section0Top:
     ; bg color
     lda BGCol_even
     sta COLUBK
-    lda (Sec0_top_l_ptr),y   ; +5
+    lda (Sec0_l_ptr),y   ; +5
     sta PF0                 ; +3 
     lda #0                  ; +2    
     sta PF1                 ; +3 
@@ -256,7 +256,7 @@ Section0Top:
     sta PF1                 ; +3 (8)
     ; wait for P23 to finish drawing
     SLEEP 8
-    lda (Sec0_top_r_ptr),y
+    lda (Sec0_r_ptr),y
     and #%11110000
     sta PF2
     dey
@@ -274,7 +274,7 @@ Section1Top:
     lda BGCol_odd
     sta COLUBK
 
-    lda (Sec1_top_l_ptr),y   ; +5
+    lda (Sec1_l_ptr),y   ; +5
     and #%11110000          ; +2
     sta PF1                 ; +3 
     lda #0                  ; +2    
@@ -286,7 +286,7 @@ Section1Top:
     lda #0                  ;    
     sta PF0                 ; +3 (8)
     sta PF1                 ; +3 (8)
-    lda (Sec1_top_r_ptr),y
+    lda (Sec1_r_ptr),y
     ora #%11110000
     sta PF2
 
@@ -304,7 +304,7 @@ Section2Top:
     lda BGCol_even
     sta COLUBK
 
-    lda (Sec2_top_l_ptr),y   ; +5
+    lda (Sec2_l_ptr),y   ; +5
     ora #%11110000          ; +2
     sta PF1                 ; +3 
     lda #0                  ; +2    
@@ -315,7 +315,7 @@ Section2Top:
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
-    lda (Sec2_top_r_ptr),y
+    lda (Sec2_r_ptr),y
     and #%00001111
     sta PF1                 ; +3 (8)
     lda #%11111111
@@ -336,7 +336,7 @@ Section3Top:
     lda BGCol_odd
     sta COLUBK
 
-    lda (Sec3_top_l_ptr),y   ; +5
+    lda (Sec3_l_ptr),y   ; +5
     and #%00001111          ; +2
     sta PF2                 ; +3 (18) 
 
@@ -345,7 +345,7 @@ Section3Top:
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
-    lda (Sec3_top_r_ptr),y
+    lda (Sec3_r_ptr),y
     ora #%00001111
     sta PF1                 ; +3 (8)
     lda #%11111111
@@ -393,7 +393,7 @@ Section3Bottom:
     lda BGCol_odd
     sta COLUBK
 
-    lda (Sec3_top_l_ptr),y   ; +5
+    lda (Sec3_l_ptr),y   ; +5
     and #%00001111          ; +2
     sta PF2                 ; +3 (18) 
 
@@ -402,7 +402,7 @@ Section3Bottom:
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
-    lda (Sec3_top_r_ptr),y
+    lda (Sec3_r_ptr),y
     ora #%00001111
     sta PF1                 ; +3 (8)
     lda #%11111111
@@ -423,7 +423,7 @@ Section2Bottom:
     lda BGCol_even
     sta COLUBK
 
-    lda (Sec2_top_l_ptr),y   ; +5
+    lda (Sec2_l_ptr),y   ; +5
     ora #%11110000          ; +2
     sta PF1                 ; +3 
     lda #0                  ; +2    
@@ -434,7 +434,7 @@ Section2Bottom:
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
-    lda (Sec2_top_r_ptr),y
+    lda (Sec2_r_ptr),y
     and #%00001111
     sta PF1                 ; +3 (8)
     lda #%11111111
@@ -456,7 +456,7 @@ Section1Bottom:
     lda BGCol_odd
     sta COLUBK
 
-    lda (Sec1_top_l_ptr),y   ; +5
+    lda (Sec1_l_ptr),y   ; +5
     and #%11110000          ; +2
     sta PF1                 ; +3 
     lda #0                  ; +2    
@@ -468,7 +468,7 @@ Section1Bottom:
     lda #0                  ;    
     sta PF0                 ; +3 (8)
     sta PF1                 ; +3 (8)
-    lda (Sec1_top_r_ptr),y
+    lda (Sec1_r_ptr),y
     ora #%11110000
     sta PF2
 
@@ -485,7 +485,7 @@ Section0Bottom:
     ; bg color
     lda BGCol_even
     sta COLUBK
-    lda (Sec0_top_l_ptr),y   ; +5
+    lda (Sec0_l_ptr),y   ; +5
     sta PF0                 ; +3 
     lda #0                  ; +2    
     sta PF1                 ; +3 
@@ -497,7 +497,7 @@ Section0Bottom:
     sta PF1                 ; +3 (8)
     ; wait for P23 to finish drawing
     SLEEP 8
-    lda (Sec0_top_r_ptr),y
+    lda (Sec0_r_ptr),y
     and #%11110000
     sta PF2
 
