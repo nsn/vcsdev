@@ -100,6 +100,17 @@ ClearRam:
     dex
     bne ClearRam
 
+; init maze
+    SET_POINTER Maze_a_a_ptr, MAZE_A_A_0
+    SET_POINTER Maze_a_b_ptr, MAZE_A_A_0
+    SET_POINTER Maze_a_c_ptr, MAZE_A_A_0
+    SET_POINTER Maze_b_a_ptr, MAZE_A_A_0
+    SET_POINTER Maze_b_b_ptr, MAZE_A_A_0
+    SET_POINTER Maze_b_c_ptr, MAZE_A_A_0
+    SET_POINTER Maze_c_a_ptr, MAZE_A_A_0
+    SET_POINTER Maze_c_b_ptr, MAZE_A_A_0
+    SET_POINTER Maze_c_c_ptr, MAZE_A_A_0
+
 ; set TIA behaviour
     ; set bg color to black ($0)
     lda #$00
@@ -145,6 +156,15 @@ VerticalBlank:
     sta VSYNC
     rts ;--- VerticalBlank
 
+
+;----------------------------
+; test tile in maze
+;----------------------------
+TestMaze:
+    rts
+
+
+
 ;----------------------------
 ; calculate game state for this frame
 ;----------------------------
@@ -167,17 +187,19 @@ CheckLeft:
     and #%01000000
     bne CheckUp
     dec Player_Orientation
-CheckUp:
-CheckDown:
     ; Player Position
     ; joystick up/down
+CheckUp:
+CheckDown:
     lda #1
     sta Player_Pos_X 
     lda #4
     sta Player_Pos_Y
-
 InputCheckEnd:
 
+    ldx Player_Pos_X
+    ldy Player_Pos_Y
+    jsr TestMaze
 
     ; set playfield data pointers 
     ; according to position in maze
