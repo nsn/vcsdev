@@ -161,6 +161,12 @@ VerticalBlank:
 ; test tile in maze
 ;----------------------------
 TestMaze:
+    ; Quadrant?
+    txa
+    lsr
+    lsr
+    lsr
+
     rts
 
 
@@ -395,7 +401,7 @@ FarEnd:
 
     ; --- ##########################
     ; 16 Scanlines of Section3Bottom
-    ldy #15
+    ldy #0
 Section3Bottom:
     sta WSYNC
     lda #%11111111
@@ -405,7 +411,7 @@ Section3Bottom:
     lda BGCol_odd
     sta COLUBK
 
-    lda (Sec3_btm_l_ptr),y   ; +5
+    lda (Sec3_top_l_ptr),y   ; +5
     and #%00001111          ; +2
     sta PF2                 ; +3 (18) 
 
@@ -414,18 +420,19 @@ Section3Bottom:
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
-    lda (Sec3_btm_r_ptr),y
+    lda (Sec3_top_r_ptr),y
     ora #%00001111
     sta PF1                 ; +3 (8)
     lda #%11111111
     sta PF2
 
-    dey
-    bpl Section3Bottom
+    iny
+    cpy #16
+    bne Section3Bottom
 
     ; --- ##########################
     ; 16 Scanlines of Section2Bottom
-    ldy #15
+    ldy #0
 Section2Bottom:
     sta WSYNC
     lda #%11110000
@@ -434,7 +441,7 @@ Section2Bottom:
     lda BGCol_even
     sta COLUBK
 
-    lda (Sec2_btm_l_ptr),y   ; +5
+    lda (Sec2_top_l_ptr),y   ; +5
     ora #%11110000          ; +2
     sta PF1                 ; +3 
     lda #0                  ; +2    
@@ -445,18 +452,19 @@ Section2Bottom:
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
-    lda (Sec2_btm_r_ptr),y
+    lda (Sec2_top_r_ptr),y
     and #%00001111
     sta PF1                 ; +3 (8)
     lda #%11111111
     sta PF2
 
-    dey
-    bpl Section2Bottom
+    iny
+    cpy #16
+    bne Section2Bottom
 
     ; --- ##########################
     ; 16 Scanlines of Section1Bottom
-    ldy #15
+    ldy #0
 Section1Bottom:
     sta WSYNC
     lda #%11110000
@@ -466,7 +474,7 @@ Section1Bottom:
     lda BGCol_odd
     sta COLUBK
 
-    lda (Sec1_btm_l_ptr),y   ; +5
+    lda (Sec1_top_l_ptr),y   ; +5
     and #%11110000          ; +2
     sta PF1                 ; +3 
     lda #0                  ; +2    
@@ -478,23 +486,24 @@ Section1Bottom:
     lda #0                  ;    
     sta PF0                 ; +3 (8)
     sta PF1                 ; +3 (8)
-    lda (Sec1_btm_r_ptr),y
+    lda (Sec1_top_r_ptr),y
     ora #%11110000
     sta PF2
 
-    dey
-    bpl Section1Bottom
+    iny
+    cpy #16
+    bne Section1Bottom
 
 
     ; --- ##########################
     ; 16 Scanlines of Section0Bottom
-    ldy #15
+    ldy #0
 Section0Bottom:
     sta WSYNC
     ; bg color
     lda BGCol_even
     sta COLUBK
-    lda (Sec0_btm_l_ptr),y   ; +5
+    lda (Sec0_top_l_ptr),y   ; +5
     sta PF0                 ; +3 
     lda #0                  ; +2    
     sta PF1                 ; +3 
@@ -506,11 +515,13 @@ Section0Bottom:
     sta PF1                 ; +3 (8)
     ; wait for P23 to finish drawing
     SLEEP 8
-    lda (Sec0_btm_r_ptr),y
+    lda (Sec0_top_r_ptr),y
     and #%11110000
     sta PF2
-    dey
-    bpl Section0Bottom
+
+    iny
+    cpy #16
+    bne Section0Bottom
 
 
     ; clear registers to prevent bleeding
