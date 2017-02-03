@@ -59,20 +59,12 @@ Maze_c_c_ptr        ds 2
 ; would also reduce pfdata ROM size
 Sec0_top_l_ptr       ds 2
 Sec0_top_r_ptr       ds 2
-Sec0_btm_l_ptr       ds 2
-Sec0_btm_r_ptr       ds 2
 Sec1_top_l_ptr       ds 2
 Sec1_top_r_ptr       ds 2
-Sec1_btm_l_ptr       ds 2
-Sec1_btm_r_ptr       ds 2
 Sec2_top_l_ptr       ds 2
 Sec2_top_r_ptr       ds 2
-Sec2_btm_l_ptr       ds 2
-Sec2_btm_r_ptr       ds 2
 Sec3_top_l_ptr       ds 2
 Sec3_top_r_ptr       ds 2
-Sec3_btm_l_ptr       ds 2
-Sec3_btm_r_ptr       ds 2
 ; BGColor value, 2 bytes
 BGCol_odd           ds 1
 BGCol_even          ds 1
@@ -212,26 +204,16 @@ InputCheckEnd:
     SET_POINTER Sec0_top_l_ptr, PF_1_0 
         SET_POINTER Sec0_top_l_ptr, PF_NONE
     SET_POINTER Sec0_top_r_ptr, PF_1_1
-    SET_POINTER Sec0_btm_l_ptr, PF_0_0 
-        SET_POINTER Sec0_btm_l_ptr, PF_NONE
-    SET_POINTER Sec0_btm_r_ptr, PF_0_1
 
     SET_POINTER Sec1_top_l_ptr, PF_1_1 
     SET_POINTER Sec1_top_r_ptr, PF_1_1
-    SET_POINTER Sec1_btm_l_ptr, PF_0_1 
-    SET_POINTER Sec1_btm_r_ptr, PF_0_1
 
     SET_POINTER Sec2_top_l_ptr, PF_1_1 
     SET_POINTER Sec2_top_r_ptr, PF_1_0
         SET_POINTER Sec2_top_r_ptr, PF_NONE
-    SET_POINTER Sec2_btm_l_ptr, PF_0_1 
-    SET_POINTER Sec2_btm_r_ptr, PF_0_0
-        SET_POINTER Sec2_btm_r_ptr, PF_NONE
 
     SET_POINTER Sec3_top_l_ptr, PF_1_0 
     SET_POINTER Sec3_top_r_ptr, PF_1_0
-    SET_POINTER Sec3_btm_l_ptr, PF_0_0 
-    SET_POINTER Sec3_btm_r_ptr, PF_0_0
 
     ; set background color
     ; according to position in maze
