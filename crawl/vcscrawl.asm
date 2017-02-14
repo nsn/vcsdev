@@ -39,18 +39,29 @@ SWCHA_Shadow        ds 1
 ; player data
 Player_Pos_X        ds 1
 Player_Pos_Y        ds 1
+; 0 0  E
+; 0 1  S
+; 1 0  W
+; 1 1  N
 Player_Orientation  ds 1
 ; maze data
-; 9*2 = 18 bytes
-Maze_a_a_ptr        ds 2
-Maze_a_b_ptr        ds 2
-Maze_a_c_ptr        ds 2
-Maze_b_a_ptr        ds 2
-Maze_b_b_ptr        ds 2
-Maze_b_c_ptr        ds 2
-Maze_c_a_ptr        ds 2
-Maze_c_b_ptr        ds 2
-Maze_c_c_ptr        ds 2
+; 4x4 = 16 bytes
+Maze_a_a        ds 1 
+Maze_a_b        ds 1
+Maze_a_c        ds 1
+Maze_a_d        ds 1
+Maze_b_a        ds 1
+Maze_b_b        ds 1
+Maze_b_c        ds 1
+Maze_b_d        ds 1
+Maze_c_a        ds 1
+Maze_c_b        ds 1
+Maze_c_c        ds 1
+Maze_c_d        ds 1
+Maze_d_a        ds 1
+Maze_d_b        ds 1
+Maze_d_c        ds 1
+Maze_d_d        ds 1
 ; wall section pointers:
 ; 4*2*2 = 16 bytes
 ; TODO: remove the need for btm ptrs,
@@ -93,15 +104,15 @@ ClearRam:
     bne ClearRam
 
 ; init maze
-    SET_POINTER Maze_a_a_ptr, MAZE_A_A_0
-    SET_POINTER Maze_a_b_ptr, MAZE_A_A_0
-    SET_POINTER Maze_a_c_ptr, MAZE_A_A_0
-    SET_POINTER Maze_b_a_ptr, MAZE_A_A_0
-    SET_POINTER Maze_b_b_ptr, MAZE_A_A_0
-    SET_POINTER Maze_b_c_ptr, MAZE_A_A_0
-    SET_POINTER Maze_c_a_ptr, MAZE_A_A_0
-    SET_POINTER Maze_c_b_ptr, MAZE_A_A_0
-    SET_POINTER Maze_c_c_ptr, MAZE_A_A_0
+    ldx #0
+    lda #0
+InitMaze:
+    sta Maze_a_a,x
+    adc #16
+    inx
+    cpx #16
+    bne InitMaze
+
 
 ; set TIA behaviour
     ; set bg color to black ($0)
@@ -153,12 +164,12 @@ VerticalBlank:
 ; test tile in maze
 ;----------------------------
 TestMaze:
-    ; Quadrant?
+    ; Maze_x_x variable
     txa
     lsr
     lsr
     lsr
-
+    
     rts
 
 
@@ -191,16 +202,60 @@ CheckUp:
 CheckDown:
     lda #1
     sta Player_Pos_X 
-    lda #4
+    lda #2
     sta Player_Pos_Y
 InputCheckEnd:
 
-    ldx Player_Pos_X
-    ldy Player_Pos_Y
-    jsr TestMaze
-
     ; set playfield data pointers 
     ; according to position in maze
+
+FacingEast:
+    ; get byte for left corridor walls
+    ; - calculate quadrant offset (0-F)  
+    lda Player_Pos_X
+    lsr
+    lsr
+    lsr 
+    sta tmp
+    lda Player_Pos_Y
+    lsr
+    and #%11111100
+    clc
+    adc tmp
+    ; store quadrant offset in x
+    tax
+    ; load value of quadrant pointer into a
+    lda Maze_a_a,x
+
+    ; store it
+    sta tmp
+    ; - add y offset
+    lda Player_Pos_Y
+    and #%00000111
+    clc
+    adc tmp
+    ; store in x
+    tax
+    ; load maze value and
+    ; shift so that Player_Pos_X is at lsb
+    lda Player_Pos_X
+    and #%00000111
+    tay
+    lda MAZEDATA_0,x
+shiftLoop
+    dey
+    bmi doneShifting
+    lsr
+    jmp shiftLoop
+doneShifting
+   
+     
+
+    ; get byte for right corridor walls
+
+    ; get byte for corridor/far end distance
+
+
     SET_POINTER Sec0_l_ptr, PF_1_0 
         SET_POINTER Sec0_l_ptr, PF_NONE
     SET_POINTER Sec0_r_ptr, PF_1_1
@@ -542,15 +597,9 @@ OverScanLineWait:
 
     include "pfdata.inc"
 
-MAZE_A_A_0:
-    .byte #%11111111
-    .byte #%11111111
-    .byte #%11111111
-    .byte #%10110111
-    .byte #%10000000
-    .byte #%11101101
-    .byte #%11111111
-    .byte #%11111111
+    ; 
+    ORG $FD00
+    include "mazedata.inc"
 
 
 ;----------------------------
