@@ -33,7 +33,12 @@ BGCOL_FAR = $00
     SEG.U variables
     ORG $80
 
-tmp                 ds 2
+tmp1                ds 1
+tmp2                ds 1
+tmp3                ds 1
+tmp4                ds 1
+tmp5                ds 1
+tmp6                ds 1
 ; shadow registers
 SWCHA_Shadow        ds 1
 ; player data
@@ -162,17 +167,100 @@ VerticalBlank:
 
 ;----------------------------
 ; test tile in maze
+; input: 
+;   tmp1 - playerX
+;   tmp2 - playerY
+; output:
+;   Z flag - set if tile is solid, unset otherwise
 ;----------------------------
-TestMaze:
-    ; Maze_x_x variable
-    txa
+TestTile: SUBROUTINE
+    ; store X and Y
+    stx tmp1
+    sty tmp2
+    ; get byte for left corridor walls
+    ; - calculate quadrant offset (0-F)  
+    lda tmp1
     lsr
     lsr
+    lsr 
+    sta tmp3
+    lda tmp2
     lsr
-    
+    and #%11111100
+    clc
+    adc tmp3
+    ; store quadrant offset in x
+    tax
+    ; load value of quadrant pointer into a
+    lda Maze_a_a,x
+
+    ; store it
+    sta tmp3
+    ; - add y offset
+    lda tmp2
+    and #%00000111
+    clc
+    adc tmp3
+    ; store in x
+    tax
+    ; load maze value and
+    ; shift so that Player_Pos_X is at lsb
+    lda tmp1
+    and #%00000111
+    tay
+    lda MAZEDATA_0,x
+.shiftLoop
+    dey
+    bmi .doneShifting
+    lsr
+    jmp .shiftLoop
+.doneShifting
+    ; restore X and Y
+    ldx tmp1
+    ldy tmp2
+    ; set Z flag
+    and #1
     rts
 
-
+;FacingEast:
+;    ; get byte for left corridor walls
+;    ; - calculate quadrant offset (0-F)  
+;    lda Player_Pos_X
+;    lsr
+;    lsr
+;    lsr 
+;    sta tmp1
+;    lda Player_Pos_Y
+;    lsr
+;    and #%11111100
+;    clc
+;    adc tmp1
+;    ; store quadrant offset in x
+;    tax
+;    ; load value of quadrant pointer into a
+;    lda Maze_a_a,x
+;
+;    ; store it
+;    sta tmp1
+;    ; - add y offset
+;    lda Player_Pos_Y
+;    and #%00000111
+;    clc
+;    adc tmp1
+;    ; store in x
+;    tax
+;    ; load maze value and
+;    ; shift so that Player_Pos_X is at lsb
+;    lda Player_Pos_X
+;    and #%00000111
+;    tay
+;    lda MAZEDATA_0,x
+;shiftLoop
+;    dey
+;    bmi doneShifting
+;    lsr
+;    jmp shiftLoop
+;doneShifting
 
 ;----------------------------
 ; calculate game state for this frame
@@ -208,56 +296,9 @@ InputCheckEnd:
 
     ; set playfield data pointers 
     ; according to position in maze
-
-FacingEast:
-    ; get byte for left corridor walls
-    ; - calculate quadrant offset (0-F)  
-    lda Player_Pos_X
-    lsr
-    lsr
-    lsr 
-    sta tmp
-    lda Player_Pos_Y
-    lsr
-    and #%11111100
-    clc
-    adc tmp
-    ; store quadrant offset in x
-    tax
-    ; load value of quadrant pointer into a
-    lda Maze_a_a,x
-
-    ; store it
-    sta tmp
-    ; - add y offset
-    lda Player_Pos_Y
-    and #%00000111
-    clc
-    adc tmp
-    ; store in x
-    tax
-    ; load maze value and
-    ; shift so that Player_Pos_X is at lsb
-    lda Player_Pos_X
-    and #%00000111
-    tay
-    lda MAZEDATA_0,x
-shiftLoop
-    dey
-    bmi doneShifting
-    lsr
-    jmp shiftLoop
-doneShifting
-   
-     
-
-    ; get byte for right corridor walls
-
-    ; get byte for corridor/far end distance
-
+    ; first: set all to solid
 
     SET_POINTER Sec0_l_ptr, PF_1_0 
-        SET_POINTER Sec0_l_ptr, PF_NONE
     SET_POINTER Sec0_r_ptr, PF_1_1
 
     SET_POINTER Sec1_l_ptr, PF_1_1 
@@ -265,10 +306,69 @@ doneShifting
 
     SET_POINTER Sec2_l_ptr, PF_1_1 
     SET_POINTER Sec2_r_ptr, PF_1_0
-        SET_POINTER Sec2_r_ptr, PF_NONE
 
     SET_POINTER Sec3_l_ptr, PF_1_0 
     SET_POINTER Sec3_r_ptr, PF_1_0
+
+    ; left corridor wall
+LeftWall: SUBROUTINE
+    ldx Player_Pos_X
+    ldy Player_Pos_Y
+    dey
+    jsr TestTile
+    bne .solid0
+    SET_POINTER Sec0_l_ptr, PF_NONE
+.solid0
+    inx
+    jsr TestTile
+    bne .solid1
+    SET_POINTER Sec1_l_ptr, PF_NONE
+.solid1
+    inx
+    jsr TestTile
+    bne .solid2
+    SET_POINTER Sec2_l_ptr, PF_NONE
+.solid2
+    inx
+    jsr TestTile
+    bne .solid3
+    SET_POINTER Sec3_l_ptr, PF_NONE
+.solid3
+    ; right corridor wall
+RightWall: SUBROUTINE
+    ldx Player_Pos_X
+    ldy Player_Pos_Y
+    iny
+    jsr TestTile
+    bne .solid0
+    SET_POINTER Sec0_r_ptr, PF_NONE
+.solid0
+    inx
+    jsr TestTile
+    bne .solid1
+    SET_POINTER Sec1_r_ptr, PF_NONE
+.solid1
+    inx
+    jsr TestTile
+    bne .solid2
+    SET_POINTER Sec2_r_ptr, PF_NONE
+.solid2
+    inx
+    jsr TestTile
+    bne .solid3
+    SET_POINTER Sec3_r_ptr, PF_NONE
+.solid3
+     
+    
+
+   
+     
+
+    ; get byte for right corridor walls
+
+    ; get byte for corridor/far end distance
+    
+
 
     ; set background color
     ; according to position in maze
