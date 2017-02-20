@@ -81,6 +81,8 @@ Sec2_l_ptr       ds 2
 Sec2_r_ptr       ds 2
 Sec3_l_ptr       ds 2
 Sec3_r_ptr       ds 2
+; basically how far away is the far wall?
+CullDistance     ds 1
 ; BGColor value, 2 bytes
 BGCol_odd           ds 1
 BGCol_even          ds 1
@@ -117,7 +119,11 @@ InitMaze:
     inx
     cpx #16
     bne InitMaze
-
+; init player pos
+    lda #1
+    sta Player_Pos_X 
+    lda #2
+    sta Player_Pos_Y
 
 ; set TIA behaviour
     ; set bg color to black ($0)
@@ -174,9 +180,6 @@ VerticalBlank:
 ;   Z flag - set if tile is solid, unset otherwise
 ;----------------------------
 TestTile: SUBROUTINE
-    ; store X and Y
-    stx tmp1
-    sty tmp2
     ; get byte for left corridor walls
     ; - calculate quadrant offset (0-F)  
     lda tmp1
@@ -215,52 +218,10 @@ TestTile: SUBROUTINE
     lsr
     jmp .shiftLoop
 .doneShifting
-    ; restore X and Y
-    ldx tmp1
-    ldy tmp2
     ; set Z flag
     and #1
     rts
 
-;FacingEast:
-;    ; get byte for left corridor walls
-;    ; - calculate quadrant offset (0-F)  
-;    lda Player_Pos_X
-;    lsr
-;    lsr
-;    lsr 
-;    sta tmp1
-;    lda Player_Pos_Y
-;    lsr
-;    and #%11111100
-;    clc
-;    adc tmp1
-;    ; store quadrant offset in x
-;    tax
-;    ; load value of quadrant pointer into a
-;    lda Maze_a_a,x
-;
-;    ; store it
-;    sta tmp1
-;    ; - add y offset
-;    lda Player_Pos_Y
-;    and #%00000111
-;    clc
-;    adc tmp1
-;    ; store in x
-;    tax
-;    ; load maze value and
-;    ; shift so that Player_Pos_X is at lsb
-;    lda Player_Pos_X
-;    and #%00000111
-;    tay
-;    lda MAZEDATA_0,x
-;shiftLoop
-;    dey
-;    bmi doneShifting
-;    lsr
-;    jmp shiftLoop
-;doneShifting
 
 ;----------------------------
 ; calculate game state for this frame
@@ -282,16 +243,20 @@ CheckRight:
 CheckLeft:
     lda SWCHA_Shadow
     and #%01000000
-    bne CheckUp
+    bne CheckDown
     dec Player_Orientation
     ; Player Position
     ; joystick up/down
-CheckUp:
 CheckDown:
-    lda #1
-    sta Player_Pos_X 
-    lda #2
-    sta Player_Pos_Y
+    lda SWCHA_Shadow
+    and #%00100000
+    bne CheckUp
+    dec Player_Pos_X
+CheckUp:
+    lda SWCHA_Shadow
+    and #%00010000
+    bne InputCheckEnd
+    inc Player_Pos_X
 InputCheckEnd:
 
     ; set playfield data pointers 
@@ -310,50 +275,69 @@ InputCheckEnd:
     SET_POINTER Sec3_l_ptr, PF_1_0 
     SET_POINTER Sec3_r_ptr, PF_1_0
 
+
+    ; far wall
+;    lda #0
+;    sta CullDistance
+;    ldx Player_Pos_X
+;    ldy Player_Pos_Y
+;FarWall: SUBROUTINE
+;    inx
+;    cpx #5
+;    beq .setCull
+;    jsr TestTile
+;    beq FarWall
+;.setCull
+;    stx CullDistance
+
     ; left corridor wall
 LeftWall: SUBROUTINE
-    ldx Player_Pos_X
-    ldy Player_Pos_Y
-    dey
+    lda Player_Pos_X
+    sta tmp1
+    lda Player_Pos_Y
+    sta tmp2
+    dec tmp2
     jsr TestTile
     bne .solid0
     SET_POINTER Sec0_l_ptr, PF_NONE
 .solid0
-    inx
+    inc tmp1
     jsr TestTile
     bne .solid1
     SET_POINTER Sec1_l_ptr, PF_NONE
 .solid1
-    inx
+    inc tmp1
     jsr TestTile
     bne .solid2
     SET_POINTER Sec2_l_ptr, PF_NONE
 .solid2
-    inx
+    inc tmp1
     jsr TestTile
     bne .solid3
     SET_POINTER Sec3_l_ptr, PF_NONE
 .solid3
     ; right corridor wall
 RightWall: SUBROUTINE
-    ldx Player_Pos_X
-    ldy Player_Pos_Y
-    iny
+    lda Player_Pos_X
+    sta tmp1
+    lda Player_Pos_Y
+    sta tmp2
+    inc tmp2
     jsr TestTile
     bne .solid0
     SET_POINTER Sec0_r_ptr, PF_NONE
 .solid0
-    inx
+    inc tmp1
     jsr TestTile
     bne .solid1
     SET_POINTER Sec1_r_ptr, PF_NONE
 .solid1
-    inx
+    inc tmp1
     jsr TestTile
     bne .solid2
     SET_POINTER Sec2_r_ptr, PF_NONE
 .solid2
-    inx
+    inc tmp1
     jsr TestTile
     bne .solid3
     SET_POINTER Sec3_r_ptr, PF_NONE
