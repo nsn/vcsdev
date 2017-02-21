@@ -277,18 +277,19 @@ InputCheckEnd:
 
 
     ; far wall
-;    lda #0
-;    sta CullDistance
-;    ldx Player_Pos_X
-;    ldy Player_Pos_Y
-;FarWall: SUBROUTINE
-;    inx
-;    cpx #5
-;    beq .setCull
-;    jsr TestTile
-;    beq FarWall
-;.setCull
-;    stx CullDistance
+    lda #0
+    sta CullDistance
+    lda Player_Pos_X
+    sta tmp1
+    lda Player_Pos_Y
+    sta tmp2
+FarWall: SUBROUTINE
+    inc tmp1
+    inc CullDistance
+    beq .done
+    jsr TestTile
+    beq FarWall
+.done
 
     ; left corridor wall
 LeftWall: SUBROUTINE
