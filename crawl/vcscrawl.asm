@@ -378,8 +378,9 @@ DrawScreen:
     ; Y will be our scanline counter
     ; --- ##########################
     ; 16 Scanlines of Section0Top
+Section0Top: SUBROUTINE
     ldy #15
-Section0Top:
+.lineLoop
     sta WSYNC
     ; bg color
     lda BGCol_even
@@ -400,12 +401,13 @@ Section0Top:
     and #%11110000
     sta PF2
     dey
-    bpl Section0Top
+    bpl .lineLoop
 
     ; --- ##########################
     ; 16 Scanlines of Section1Top
+Section1Top: SUBROUTINE
     ldy #15
-Section1Top:
+.lineLoop
     sta WSYNC
     lda #%11110000
     sta PF0
@@ -431,12 +433,13 @@ Section1Top:
     sta PF2
 
     dey
-    bpl Section1Top
+    bpl .lineLoop
 
     ; --- ##########################
     ; 16 Scanlines of Section2Top
+Section2Top: SUBROUTINE
     ldy #15
-Section2Top:
+.lineLoop
     sta WSYNC
     lda #%11110000
     sta PF0
@@ -462,12 +465,13 @@ Section2Top:
     sta PF2
 
     dey
-    bpl Section2Top
+    bpl .lineLoop
 
     ; --- ##########################
     ; 16 Scanlines of Section3Top
+Section3Top: SUBROUTINE
     ldy #15
-Section3Top:
+.lineLoop
     sta WSYNC
     lda #%11111111
     sta PF0
@@ -492,13 +496,14 @@ Section3Top:
     sta PF2
 
     dey
-    bpl Section3Top
+    bpl .lineLoop
 
 
     ; --- ##########################
     ; 32 Scanlines of far end of tunnel
+FarEnd: SUBROUTINE
     ldy #31
-FarEnd:
+.lineLoop
     sta WSYNC
     ; bg color 
     lda #BGCOL_FAR
@@ -519,12 +524,13 @@ FarEnd:
     sta PF2
 
     dey
-    bpl FarEnd
+    bpl .lineLoop
 
     ; --- ##########################
     ; 16 Scanlines of Section3Bottom
+Section3Bottom: SUBROUTINE
     ldy #0
-Section3Bottom:
+.lineLoop
     sta WSYNC
     lda #%11111111
     sta PF0
@@ -550,12 +556,13 @@ Section3Bottom:
 
     iny
     cpy #16
-    bne Section3Bottom
+    bne .lineLoop
 
     ; --- ##########################
     ; 16 Scanlines of Section2Bottom
+Section2Bottom: SUBROUTINE
     ldy #0
-Section2Bottom:
+.lineLoop
     sta WSYNC
     lda #%11110000
     sta PF0
@@ -582,12 +589,13 @@ Section2Bottom:
 
     iny
     cpy #16
-    bne Section2Bottom
+    bne .lineLoop
 
     ; --- ##########################
     ; 16 Scanlines of Section1Bottom
+Section1Bottom: SUBROUTINE
     ldy #0
-Section1Bottom:
+.lineLoop
     sta WSYNC
     lda #%11110000
     sta PF0
@@ -614,13 +622,14 @@ Section1Bottom:
 
     iny
     cpy #16
-    bne Section1Bottom
+    bne .lineLoop
 
 
     ; --- ##########################
     ; 16 Scanlines of Section0Bottom
+Section0Bottom: SUBROUTINE
     ldy #0
-Section0Bottom:
+.lineLoop
     sta WSYNC
     ; bg color
     lda BGCol_even
@@ -643,7 +652,7 @@ Section0Bottom:
 
     iny
     cpy #16
-    bne Section0Bottom
+    bne .lineLoop
 
 
     ; clear registers to prevent bleeding
