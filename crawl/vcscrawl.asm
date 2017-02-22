@@ -1,4 +1,24 @@
-; blank vcs 2600 project
+; VCS Crawl 
+; (c) 2017 Michael Bayer
+; 
+;
+; TODO
+; - last section (3) looks too large, 
+;   maybe reduce to 12 scanlines instead of 16?
+;
+; Loads of room for optimizations:
+; - culling tests
+;   these decide whether to use the current odd/even color or use
+;   the playfield color to simulate a solid wall
+;   these are performed each scanline instead if once per section 
+;   or even per frame
+; - wall pointers
+;   the subroutine TestTile is executed many times per wall and for
+;   culldistance calculations, could be optimized to fetch the 
+;   relevant maze byte only once. This would require each maze
+;   quadrant to also be stored in a transposed ([]^-1) format in 
+;   addition to the current x-inverted format
+;
 
     processor 6502
 
@@ -442,11 +462,20 @@ Section1Top: SUBROUTINE
 Section2Top: SUBROUTINE
     ldy #15
 .lineLoop
+    ; prepare CullDistance comparison for later
+    ldx #3                  ; +2
+    cpx CullDistance        ; +3
     sta WSYNC
     lda #%11110000
     sta PF0
-    ; bg color
-    lda BGCol_even
+    ; bg color: even/odd or playfield
+    bcs .cull               ; +2/3
+    lda BGCol_even          ; +3 (5)
+    jmp .nocull             ; +3 (8)
+.cull
+    lda PFCOL               ; +3 (6)
+    nop                     ; +2 (8) nop to equalize branch cycle counts
+.nocull
     sta COLUBK
 
     lda (Sec2_l_ptr),y   ; +5
@@ -456,7 +485,7 @@ Section2Top: SUBROUTINE
     sta PF2                 ; +3 (18) 
 
     ; wait for PF1 to finish drawing
-    SLEEP 12
+    SLEEP 4
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
@@ -475,7 +504,7 @@ Section3Top: SUBROUTINE
     ldy #15
 .lineLoop
     ; ScanCycle 64 - 8 cycles left...
-    ; prepace CullDistance comparison for later
+    ; prepare CullDistance comparison for later
     ldx #4                  ; +2
     cpx CullDistance        ; +3
     ; out of cycles - need to strobe WSYNC
@@ -559,7 +588,7 @@ FarEnd: SUBROUTINE
 Section3Bottom: SUBROUTINE
     ldy #0
 .lineLoop
-    ; prepace CullDistance comparison for later
+    ; prepare CullDistance comparison for later
     ldx #4                  ; +2
     cpx CullDistance        ; +3
     ; plenty of cycles left, end line - need to strobe WSYNC
@@ -601,11 +630,21 @@ Section3Bottom: SUBROUTINE
 Section2Bottom: SUBROUTINE
     ldy #0
 .lineLoop
+    ; prepare CullDistance comparison for later
+    ldx #3                  ; +2
+    cpx CullDistance        ; +3
     sta WSYNC
     lda #%11110000
     sta PF0
-    ; bg color
-    lda BGCol_even
+
+    ; bg color: even/odd or playfield
+    bcs .cull               ; +2/3
+    lda BGCol_even          ; +3 (5)
+    jmp .nocull             ; +3 (8)
+.cull
+    lda PFCOL               ; +3 (6)
+    nop                     ; +2 (8) nop to equalize branch cycle counts
+.nocull
     sta COLUBK
 
     lda (Sec2_l_ptr),y   ; +5
@@ -615,7 +654,7 @@ Section2Bottom: SUBROUTINE
     sta PF2                 ; +3 (18) 
 
     ; wait for PF1 to finish drawing
-    SLEEP 12
+    SLEEP 4
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
