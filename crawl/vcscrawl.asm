@@ -414,11 +414,12 @@ Section0Top: SUBROUTINE
     sta PF2                 ; +3 (18) 
     ; wait for PF0 to finish drawing
     SLEEP 16
+
     lda #0                  ;    
     sta PF0                 ; +3 (8)
     sta PF1                 ; +3 (8)
     ; wait for P23 to finish drawing
-    SLEEP 8
+    SLEEP 6
     lda (Sec0_r_ptr),y
     and #%11110000
     sta PF2
@@ -430,12 +431,21 @@ Section0Top: SUBROUTINE
 Section1Top: SUBROUTINE
     ldy #15
 .lineLoop
+    ; prepare CullDistance comparison for later
+    ldx #2                  ; +2
+    cpx CullDistance        ; +3
     sta WSYNC
     lda #%11110000
     sta PF0
 
-    ; bg color
-    lda BGCol_odd
+    ; bg color: even/odd or playfield
+    bcs .cull               ; +2/3
+    lda BGCol_odd           ; +3 (5)
+    jmp .nocull             ; +3 (8)
+.cull
+    lda PFCOL               ; +3 (6)
+    nop                     ; +2 (8) nop to equalize branch cycle counts
+.nocull
     sta COLUBK
 
     lda (Sec1_l_ptr),y   ; +5
@@ -445,7 +455,7 @@ Section1Top: SUBROUTINE
     sta PF2                 ; +3 (18) 
 
     ; wait for PF1 to finish drawing
-    SLEEP 12
+    SLEEP 4
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
@@ -673,12 +683,21 @@ Section2Bottom: SUBROUTINE
 Section1Bottom: SUBROUTINE
     ldy #0
 .lineLoop
+    ; prepare CullDistance comparison for later
+    ldx #2                  ; +2
+    cpx CullDistance        ; +3
     sta WSYNC
     lda #%11110000
     sta PF0
 
-    ; bg color
-    lda BGCol_odd
+    ; bg color: even/odd or playfield
+    bcs .cull               ; +2/3
+    lda BGCol_odd           ; +3 (5)
+    jmp .nocull             ; +3 (8)
+.cull
+    lda PFCOL               ; +3 (6)
+    nop                     ; +2 (8) nop to equalize branch cycle counts
+.nocull
     sta COLUBK
 
     lda (Sec1_l_ptr),y   ; +5
@@ -688,7 +707,7 @@ Section1Bottom: SUBROUTINE
     sta PF2                 ; +3 (18) 
 
     ; wait for PF1 to finish drawing
-    SLEEP 12
+    SLEEP 4 
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
