@@ -16,6 +16,8 @@ NUM_SCANLINES = 191
 BGCOL_DARK = $E4
 BGCOL_LIGHT = $E8
 BGCOL_FAR = $00
+PFCOL = $0E
+
 
 ;--- end Constants
 
@@ -129,8 +131,8 @@ InitMaze:
     ; set bg color to black ($0)
     lda #$00
     sta COLUBK
-    ; set pf color to white
-    lda #$0E
+    ; set pf color
+    lda #PFCOL
     sta COLUPF
     ; set pf behaviour
     lda #%00000000
@@ -297,7 +299,7 @@ LeftWall: SUBROUTINE
     sta tmp1
     lda Player_Pos_Y
     sta tmp2
-    dec tmp2
+    inc tmp2
     jsr TestTile
     bne .solid0
     SET_POINTER Sec0_l_ptr, PF_NONE
@@ -323,7 +325,7 @@ RightWall: SUBROUTINE
     sta tmp1
     lda Player_Pos_Y
     sta tmp2
-    inc tmp2
+    dec tmp2
     jsr TestTile
     bne .solid0
     SET_POINTER Sec0_r_ptr, PF_NONE
@@ -504,10 +506,24 @@ Section3Top: SUBROUTINE
 FarEnd: SUBROUTINE
     ldy #31
 .lineLoop
+    ; ScanCycle 62 - 10 cycles left for checks
+    ; test if far wall should be solid or BG
+    lda #5              ; +2
+    cmp CullDistance    ; +3 (5)
+    ; we only used 5 cycles, but WSYNC takes 3...
     sta WSYNC
+    ; now we have ~22 cycles to set bgcol and PF0 
+    bcs .solidWall      ; +2/3 
+    ; wall is invisible (== BGCOL_FAR)
+    lda #BGCOL_FAR      ; +2 (4)
+    jmp .drawLine       ; +3 (7)
+.solidWall
+    lda #PFCOL          ; +2 (5)
+    nop                 ; +2 (7) nop to equalize branch cycles
+.drawLine
+
     ; bg color 
-    lda #BGCOL_FAR
-    sta COLUBK
+    sta COLUBK          
 
     lda #$ff
     sta PF0
@@ -516,7 +532,7 @@ FarEnd: SUBROUTINE
     sta PF2
 
     ; wait for PF1 to finish
-    SLEEP 22
+    SLEEP 15
 
     sta PF0
     lda #$ff
