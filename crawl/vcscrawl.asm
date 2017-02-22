@@ -474,20 +474,32 @@ Section2Top: SUBROUTINE
 Section3Top: SUBROUTINE
     ldy #15
 .lineLoop
+    ; ScanCycle 64 - 8 cycles left...
+    ; prepace CullDistance comparison for later
+    ldx #4                  ; +2
+    cpx CullDistance        ; +3
+    ; out of cycles - need to strobe WSYNC
     sta WSYNC
+    ; PF0, Pf1 are solid
     lda #%11111111
     sta PF0
     sta PF1                 ; +3 
-    ; bg color
-    lda BGCol_odd
+    ; bg color: even/odd or playfield
+    bcs .cull               ; +2/3
+    lda BGCol_odd           ; +3 (5)
+    jmp .nocull             ; +3 (8)
+.cull
+    lda PFCOL               ; +3 (6)
+    nop                     ; +2 (8) nop to equalize branch cycle counts
+.nocull
     sta COLUBK
-
+    
     lda (Sec3_l_ptr),y   ; +5
     and #%00001111          ; +2
     sta PF2                 ; +3 (18) 
 
     ; wait for PF1 to finish drawing
-    SLEEP 12
+    SLEEP 4
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
@@ -547,12 +559,22 @@ FarEnd: SUBROUTINE
 Section3Bottom: SUBROUTINE
     ldy #0
 .lineLoop
+    ; prepace CullDistance comparison for later
+    ldx #4                  ; +2
+    cpx CullDistance        ; +3
+    ; plenty of cycles left, end line - need to strobe WSYNC
     sta WSYNC
     lda #%11111111
     sta PF0
     sta PF1                 ; +3 
-    ; bg color
-    lda BGCol_odd
+    ; bg color: even/odd or playfield
+    bcs .cull               ; +2/3
+    lda BGCol_odd           ; +3 (5)
+    jmp .nocull             ; +3 (8)
+.cull
+    lda PFCOL               ; +3 (6)
+    nop                     ; +2 (8) nop to equalize branch cycle counts
+.nocull
     sta COLUBK
 
     lda (Sec3_l_ptr),y   ; +5
@@ -560,7 +582,7 @@ Section3Bottom: SUBROUTINE
     sta PF2                 ; +3 (18) 
 
     ; wait for PF1 to finish drawing
-    SLEEP 12
+    SLEEP 4
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
