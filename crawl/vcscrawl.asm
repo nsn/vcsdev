@@ -333,7 +333,6 @@ InputCheckEnd:
     ; 1 0  W
     ; 1 1  N
     ; calc direction index and store in x
-TEST:
     lda #%00000011
     and Player_Orientation
     tax
@@ -343,25 +342,19 @@ TEST:
     lda WalkingTableLO,x
     sta tmp4
 
-    CallWalkStepReturn THERE
-    lda #50
-
-THERE:
-    lda #37
-
-
-
-
-
     ; far wall
+    ; calculate CullDistance
+    ; reset
     lda #0
     sta CullDistance
+    ; set up tmp1 and tmp2
     lda Player_Pos_X
     sta tmp1
     lda Player_Pos_Y
     sta tmp2
 FarWall: SUBROUTINE
-    inc tmp1
+    CallWalkStepReturn FarWallRet
+FarWallRet:
     inc CullDistance
     beq .done
     jsr TestTile
