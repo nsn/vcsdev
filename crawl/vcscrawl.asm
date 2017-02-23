@@ -45,6 +45,32 @@ PFCOL = $0E
 ; Macros   
 ;----------------------------
 
+    ; "walks" a step in the direction defined by Player_Orientation
+    ; basically just calls the WalkEast/South/West/North subroutine
+    ; pointed to by tmp4 and tmp5, then returns to {1}
+    ; expects tmp4 and tmp5 to point to the appropriate subroutine
+    MAC CallWalkStepReturn
+
+.TARGET SET {1}
+    ; push target address to stack
+    lda #>(.TARGET-1)
+    pha
+    lda #<(.TARGET-1)
+    pha
+    ; calc direction index and store in x
+;    lda #%00000011
+;    and Player_Orientation
+;    tax
+;    ; load appropriate subroutine location into tmp4 and tmp5
+;    lda WalkingTableHI,x
+;    sta tmp5
+;    lda WalkingTableLO,x
+;    sta tmp4
+    ; jump to walk* subroutine
+    jmp (tmp4)
+
+    ENDM ;--- CallWalkStepReturn
+
 ;############################
 ; Bank1
 ;############################
@@ -109,7 +135,7 @@ CullDistance     ds 1
 BGCol_odd           ds 1
 BGCol_even          ds 1
 
-
+    echo "----",($100 - *) , "bytes of RAM left"
 ;--- end Variables 
 
     SEG code
@@ -158,7 +184,6 @@ InitMaze:
     lda #%00000000
     sta CTRLPF
 
-
 ;----------------------------
 ; Main Loop
 ;----------------------------
@@ -200,6 +225,9 @@ VerticalBlank:
 ;   tmp2 - playerY
 ; output:
 ;   Z flag - set if tile is solid, unset otherwise
+; destroys:
+;   X, Y
+;   tmp2, tmp3
 ;----------------------------
 TestTile: SUBROUTINE
     ; get byte for left corridor walls
@@ -296,6 +324,33 @@ InputCheckEnd:
 
     SET_POINTER Sec3_l_ptr, PF_1_0 
     SET_POINTER Sec3_r_ptr, PF_1_0
+
+    ; set up tmp4 and tmp5 as pointer to the correct walking subrouting
+    ; D0 of Player_Orientation: 0 -> E/W, 1 -> N,S
+    ; D1 of Player_Orientation: 0 -> inc, 1-> dec
+    ; 0 0  E
+    ; 0 1  S
+    ; 1 0  W
+    ; 1 1  N
+    ; calc direction index and store in x
+TEST:
+    lda #%00000011
+    and Player_Orientation
+    tax
+    ; load appropriate subroutine location into tmp4 and tmp5
+    lda WalkingTableHI,x
+    sta tmp5
+    lda WalkingTableLO,x
+    sta tmp4
+
+    CallWalkStepReturn THERE
+    lda #50
+
+THERE:
+    lda #37
+
+
+
 
 
     ; far wall
@@ -782,12 +837,49 @@ OverScanLineWait:
 
 
 ;----------------------------
+; Walking subroutines
+;----------------------------
+; inc/dec tmp1 (== XCoord) or tmp2 (==YCoord)
+WalkNorth: SUBROUTINE
+    inc tmp1
+    rts
+WalkEast: SUBROUTINE
+    inc tmp1
+    rts
+WalkSouth: SUBROUTINE
+    inc tmp2
+    rts
+WalkWest: SUBROUTINE
+    dec tmp2
+    rts
+
+;----------------------------
 ; Data
 ;----------------------------
+    ; walk subroutine pointer table
+WalkingTableHI:
+;    .byte >(WalkEast-1)
+;    .byte >(WalkSouth-1)
+;    .byte >(WalkWest-1)
+;    .byte >(WalkNorth-1)
+    .byte >(WalkEast)
+    .byte >(WalkSouth)
+    .byte >(WalkWest)
+    .byte >(WalkNorth)
 
+WalkingTableLO:
+;    .byte <(WalkEast-1)
+;    .byte <(WalkSouth-1)
+;    .byte <(WalkWest-1)
+;    .byte <(WalkNorth-1)
+    .byte <(WalkEast)
+    .byte <(WalkSouth)
+    .byte <(WalkWest)
+    .byte <(WalkNorth)
+
+    ; playfield data
     include "pfdata.inc"
-
-    ; 
+    ; maze data needs to be page aligned...
     ORG $FD00
     include "mazedata.inc"
 
