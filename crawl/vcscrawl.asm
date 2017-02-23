@@ -18,6 +18,8 @@
 ;   relevant maze byte only once. This would require each maze
 ;   quadrant to also be stored in a transposed ([]^-1) format in 
 ;   addition to the current x-inverted format
+; - Left/RightWall subroutines
+;   should probably be converted to loops...
 ;
 
     processor 6502
@@ -363,52 +365,74 @@ FarWallRet:
 
     ; left corridor wall
 LeftWall: SUBROUTINE
+    ; set up tmp1 and tmp2
     lda Player_Pos_X
     sta tmp1
     lda Player_Pos_Y
     sta tmp2
     inc tmp2
+    ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid0
     SET_POINTER Sec0_l_ptr, PF_NONE
 .solid0
-    inc tmp1
+    ; walk one step formward
+    CallWalkStepReturn LeftWallStep1
+LeftWallStep1:
+    ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid1
     SET_POINTER Sec1_l_ptr, PF_NONE
 .solid1
-    inc tmp1
+    ; walk one step formward
+    CallWalkStepReturn LeftWallStep2
+LeftWallStep2:
+    ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid2
     SET_POINTER Sec2_l_ptr, PF_NONE
 .solid2
-    inc tmp1
+    ; walk one step formward
+    CallWalkStepReturn LeftWallStep3
+LeftWallStep3:
+    ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid3
     SET_POINTER Sec3_l_ptr, PF_NONE
 .solid3
     ; right corridor wall
 RightWall: SUBROUTINE
+    ; set up tmp1 and tmp2
     lda Player_Pos_X
     sta tmp1
     lda Player_Pos_Y
     sta tmp2
     dec tmp2
+    ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid0
     SET_POINTER Sec0_r_ptr, PF_NONE
 .solid0
-    inc tmp1
+    ; walk one step formward
+    CallWalkStepReturn RightWallStep1
+RightWallStep1:
+    ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid1
     SET_POINTER Sec1_r_ptr, PF_NONE
 .solid1
-    inc tmp1
+    ; walk one step formward
+    CallWalkStepReturn RightWallStep2
+RightWallStep2:
+    ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid2
     SET_POINTER Sec2_r_ptr, PF_NONE
 .solid2
-    inc tmp1
+    ; walk one step formward
+    CallWalkStepReturn RightWallStep3
+RightWallStep3:
+    ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid3
     SET_POINTER Sec3_r_ptr, PF_NONE
@@ -851,20 +875,12 @@ WalkWest: SUBROUTINE
 ;----------------------------
     ; walk subroutine pointer table
 WalkingTableHI:
-;    .byte >(WalkEast-1)
-;    .byte >(WalkSouth-1)
-;    .byte >(WalkWest-1)
-;    .byte >(WalkNorth-1)
     .byte >(WalkEast)
     .byte >(WalkSouth)
     .byte >(WalkWest)
     .byte >(WalkNorth)
 
 WalkingTableLO:
-;    .byte <(WalkEast-1)
-;    .byte <(WalkSouth-1)
-;    .byte <(WalkWest-1)
-;    .byte <(WalkNorth-1)
     .byte <(WalkEast)
     .byte <(WalkSouth)
     .byte <(WalkWest)
