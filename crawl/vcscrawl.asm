@@ -1,3 +1,4 @@
+;TODO: instead of setting bgcol to pfcol cull by setting pf to #0 and set bgcol to third wall color
 ; VCS Crawl 
 ; (c) 2017 Michael Bayer
 ; 
