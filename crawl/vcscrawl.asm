@@ -370,7 +370,30 @@ LeftWall: SUBROUTINE
     sta tmp1
     lda Player_Pos_Y
     sta tmp2
+    ; modify according to Player_Orientation
+    lda Player_Orientation
+    and #%00000011
+    ; facing east?
+    cmp #%00
+    bne .notEast
     inc tmp2
+    jmp .LeftWallStep0
+.notEast
+    ; facing south?
+    cmp #%01
+    bne .notSouth
+    dec tmp1
+    jmp .LeftWallStep0
+.notSouth
+    ; facing west?
+    cmp #%10
+    bne .notWest
+    dec tmp2
+    jmp .LeftWallStep0
+.notWest
+    ; facint north!
+    inc tmp1
+.LeftWallStep0:
     ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid0
@@ -407,7 +430,30 @@ RightWall: SUBROUTINE
     sta tmp1
     lda Player_Pos_Y
     sta tmp2
+    ; modify according to Player_Orientation
+    lda Player_Orientation
+    and #%00000011
+    ; facing east?
+    cmp #%00
+    bne .notEast
     dec tmp2
+    jmp .RightWallStep0
+.notEast
+    ; facing south?
+    cmp #%01
+    bne .notSouth
+    inc tmp1
+    jmp .RightWallStep0
+.notSouth
+    ; facing west?
+    cmp #%10
+    bne .notWest
+    inc tmp2
+    jmp .RightWallStep0
+.notWest
+    ; facint north!
+    dec tmp1
+.RightWallStep0:
     ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid0
@@ -438,24 +484,26 @@ RightWallStep3:
     SET_POINTER Sec3_r_ptr, PF_NONE
 .solid3
      
-    
-
-   
-     
-
-    ; get byte for right corridor walls
-
-    ; get byte for corridor/far end distance
-    
-
-
     ; set background color
     ; according to position in maze
-    lda #BGCOL_LIGHT
-    sta BGCol_odd
-    lda #BGCOL_DARK
-    sta BGCol_even
-    sta COLUBK
+BackgroundColor: SUBROUTINE
+    clc
+    lda Player_Pos_X
+    adc Player_Pos_Y
+    and #1
+    beq .odd
+    ldx #BGCOL_LIGHT
+    ldy #BGCOL_DARK
+    jmp .bgcolend
+.odd
+    ldx #BGCOL_DARK
+    ldy #BGCOL_LIGHT
+.bgcolend
+    stx BGCol_odd
+    sty BGCol_even
+    sty COLUBK
+
+
 
     rts ;--- GameState
 
@@ -858,7 +906,7 @@ OverScanLineWait:
 ;----------------------------
 ; inc/dec tmp1 (== XCoord) or tmp2 (==YCoord)
 WalkNorth: SUBROUTINE
-    inc tmp1
+    dec tmp2
     rts
 WalkEast: SUBROUTINE
     inc tmp1
@@ -867,7 +915,7 @@ WalkSouth: SUBROUTINE
     inc tmp2
     rts
 WalkWest: SUBROUTINE
-    dec tmp2
+    dec tmp1
     rts
 
 ;----------------------------
