@@ -291,12 +291,12 @@ GameState:
 CheckRight:
     and #%10000000
     bne CheckLeft
-    inc Player_Orientation
+    dec Player_Orientation
 CheckLeft:
     lda SWCHA_Shadow
     and #%01000000
     bne CheckDown
-    dec Player_Orientation
+    inc Player_Orientation
     ; Player Position
     ; joystick up/down
 CheckDown:
