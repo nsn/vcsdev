@@ -296,16 +296,62 @@ CheckLeft:
     inc Player_Orientation
     ; Player Position
     ; joystick up/down
-CheckDown:
+CheckDown: SUBROUTINE
     lda SWCHA_Shadow
     and #%00100000
     bne CheckUp
+    ; down pressed!
+    ; modify Player Pos according to Player_Orientation
+    lda Player_Orientation
+    and #%00000011
+    ; facing east?
+    cmp #%00
+    bne .notEast
     dec Player_Pos_X
-CheckUp:
+    jmp CheckUp
+.notEast
+    ; facing south?
+    cmp #%01
+    bne .notSouth
+    dec Player_Pos_Y
+    jmp CheckUp
+.notSouth
+    ; facing west?
+    cmp #%10
+    bne .notWest
+    inc Player_Pos_X
+    jmp CheckUp
+.notWest
+    ; facint north!
+    inc Player_Pos_Y
+CheckUp: SUBROUTINE
     lda SWCHA_Shadow
     and #%00010000
     bne InputCheckEnd
+    ; Up pressed!
+    ; modify Player Pos according to Player_Orientation
+    lda Player_Orientation
+    and #%00000011
+    ; facing east?
+    cmp #%00
+    bne .notEast
     inc Player_Pos_X
+    jmp InputCheckEnd
+.notEast
+    ; facing south?
+    cmp #%01
+    bne .notSouth
+    inc Player_Pos_Y
+    jmp InputCheckEnd
+.notSouth
+    ; facing west?
+    cmp #%10
+    bne .notWest
+    dec Player_Pos_X
+    jmp InputCheckEnd
+.notWest
+    ; facint north!
+    dec Player_Pos_Y
 InputCheckEnd:
 
     ; set playfield data pointers 
