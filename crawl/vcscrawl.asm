@@ -7,6 +7,10 @@
 ;   maybe reduce to 12 scanlines instead of 16?
 ; - move Player_Orientation masking (and #%00000011) to CheckLeft/Right,
 ;   -> saves cycles
+; - make a CULL BGCol_even/odd Macro
+;   cpx CullDistance
+;   ...    
+;   sta COLUBK
 ;
 ; Loads of room for optimizations:
 ; - culling tests
@@ -689,22 +693,24 @@ Section3Top: SUBROUTINE
 .lineLoop
     ; ScanCycle 64 - 8 cycles left...
     ; prepare CullDistance comparison for later
-    ldx #4                  ; +2
-    cpx CullDistance        ; +3
+    ldx #3                  ; +2
+    lda #%11111111
     ; out of cycles - need to strobe WSYNC
     sta WSYNC
     ; PF0, Pf1 are solid
-    lda #%11111111
     sta PF0
     sta PF1                 ; +3 
+
     ; bg color: even/odd or playfield
-    bcs .cull               ; +2/3
-    lda BGCol_odd           ; +3 (5)
-    jmp .nocull             ; +3 (8)
-.cull
+    cpx CullDistance        ; +3
+    bcc .nocull             ; +2/3
+    ; X >= CullDistance -> cull
     lda PFCOL               ; +3 (6)
-    nop                     ; +2 (8) nop to equalize branch cycle counts
+    jmp .setbg
 .nocull
+    lda BGCol_odd           ; +3 (5)
+    nop                     ; +2 (8) nop to equalize branch cycle counts
+.setbg
     sta COLUBK
     
     lda (Sec3_l_ptr),y   ; +5
@@ -773,21 +779,23 @@ Section3Bottom: SUBROUTINE
     ldy #0
 .lineLoop
     ; prepare CullDistance comparison for later
-    ldx #4                  ; +2
-    cpx CullDistance        ; +3
+    ldx #3                  ; +2
+    lda #%11111111
     ; plenty of cycles left, end line - need to strobe WSYNC
     sta WSYNC
-    lda #%11111111
     sta PF0
     sta PF1                 ; +3 
+
     ; bg color: even/odd or playfield
-    bcs .cull               ; +2/3
-    lda BGCol_odd           ; +3 (5)
-    jmp .nocull             ; +3 (8)
-.cull
+    cpx CullDistance        ; +3
+    bcc .nocull             ; +2/3
+    ; X >= CullDistance -> cull
     lda PFCOL               ; +3 (6)
-    nop                     ; +2 (8) nop to equalize branch cycle counts
+    jmp .setbg
 .nocull
+    lda BGCol_odd           ; +3 (5)
+    nop                     ; +2 (8) nop to equalize branch cycle counts
+.setbg
     sta COLUBK
 
     lda (Sec3_l_ptr),y   ; +5
