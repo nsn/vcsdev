@@ -5,6 +5,8 @@
 ; TODO
 ; - last section (3) looks too large, 
 ;   maybe reduce to 12 scanlines instead of 16?
+; - move Player_Orientation masking (and #%00000011) to CheckLeft/Right,
+;   -> saves cycles
 ;
 ; Loads of room for optimizations:
 ; - culling tests
@@ -39,7 +41,6 @@ BGCOL_DARK = $E4
 BGCOL_LIGHT = $E8
 BGCOL_FAR = $00
 PFCOL = $0E
-
 
 ;--- end Constants
 
@@ -119,10 +120,6 @@ Maze_d_c        ds 1
 Maze_d_d        ds 1
 ; wall section pointers:
 ; 4*2*2 = 16 bytes
-; TODO: remove the need for btm ptrs,
-; as upper and lower part of section walls
-; has to be equal, just inverted
-; would also reduce pfdata ROM size
 Sec0_l_ptr       ds 2
 Sec0_r_ptr       ds 2
 Sec1_l_ptr       ds 2
@@ -552,32 +549,40 @@ Section1Top: SUBROUTINE
     ldy #15
 .lineLoop
     ; prepare CullDistance comparison for later
-    ldx #2                  ; +2
-    cpx CullDistance        ; +3
-    sta WSYNC
+    ldx #1                  ; +2
+    ; prepare PF0 value
     lda #%11110000
+
+    sta WSYNC
+
     sta PF0
-
-    ; bg color: even/odd or playfield
-    bcs .cull               ; +2/3
-    lda BGCol_odd           ; +3 (5)
-    jmp .nocull             ; +3 (8)
-.cull
-    lda PFCOL               ; +3 (6)
-    nop                     ; +2 (8) nop to equalize branch cycle counts
-.nocull
-    sta COLUBK
-
-    lda (Sec1_l_ptr),y   ; +5
+    ; set up PF1
+    lda (Sec1_l_ptr),y      ; +5
     and #%11110000          ; +2
     sta PF1                 ; +3 
+
+    ; use PF0 and first half of PF1 to set 
+    ; bg color: even/odd or playfield
+    ; compare X (=2) to CullDistance
+    cpx CullDistance        ; +3
+    bcc .nocull             ; +2/3
+    ; X (=2) >= CullDistance -> cull
+    lda PFCOL               ; +3 (6)
+    jmp .setbg              ; +3 (8)
+.nocull
+    ; X < CullDistance -> nocull
+    lda BGCol_odd           ; +3 (5)
+    nop                     ; +2 (8) nop to equalize branch cycle counts
+.setbg  
+    sta COLUBK
+
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
 
-    ; wait for PF1 to finish drawing
-    SLEEP 4
+    ; wait for PF2 to finish drawing
+    SLEEP 8
 
-    lda #0                  ;    
+    ; A still is #0
     sta PF0                 ; +3 (8)
     sta PF1                 ; +3 (8)
     lda (Sec1_r_ptr),y
@@ -804,25 +809,29 @@ Section1Bottom: SUBROUTINE
     ldy #0
 .lineLoop
     ; prepare CullDistance comparison for later
-    ldx #2                  ; +2
-    cpx CullDistance        ; +3
-    sta WSYNC
+    ldx #1                  ; +2
     lda #%11110000
+    sta WSYNC
     sta PF0
-
-    ; bg color: even/odd or playfield
-    bcs .cull               ; +2/3
-    lda BGCol_odd           ; +3 (5)
-    jmp .nocull             ; +3 (8)
-.cull
-    lda PFCOL               ; +3 (6)
-    nop                     ; +2 (8) nop to equalize branch cycle counts
-.nocull
-    sta COLUBK
-
     lda (Sec1_l_ptr),y   ; +5
     and #%11110000          ; +2
     sta PF1                 ; +3 
+
+    ; use PF0 and first half of PF1 to set 
+    ; bg color: even/odd or playfield
+    ; compare X (=2) to CullDistance
+    cpx CullDistance        ; +3
+    bcc .nocull             ; +2/3
+    ; X (=2) >= CullDistance -> cull
+    lda PFCOL               ; +3 (6)
+    jmp .setbg              ; +3 (8)
+.nocull
+    ; X < CullDistance -> nocull
+    lda BGCol_odd           ; +3 (5)
+    nop                     ; +2 (8) nop to equalize branch cycle counts
+.setbg  
+    sta COLUBK
+
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
 
