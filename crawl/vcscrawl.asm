@@ -739,19 +739,18 @@ FarEnd: SUBROUTINE
 .lineLoop
     ; ScanCycle 62 - 10 cycles left for checks
     ; test if far wall should be solid or BG
-    lda #5              ; +2
-    cmp CullDistance    ; +3 (5)
+    lda #4              ; +2
     ; we only used 5 cycles, but WSYNC takes 3...
     sta WSYNC
     ; now we have ~22 cycles to set bgcol and PF0 
-    bcs .solidWall      ; +2/3 
-    ; wall is invisible (== BGCOL_FAR)
-    lda #BGCOL_FAR      ; +2 (4)
-    jmp .drawLine       ; +3 (7)
-.solidWall
+    cmp CullDistance    ; +3 (5)
+    bcc .nocull         ; +2/3 
     lda #PFCOL          ; +2 (5)
+    jmp .setbg
+.nocull
+    lda #BGCOL_FAR      ; +2 (4)
     nop                 ; +2 (7) nop to equalize branch cycles
-.drawLine
+.setbg    
 
     ; bg color 
     sta COLUBK          
