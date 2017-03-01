@@ -86,6 +86,16 @@ PFCOL = $0E
 
     ENDM ;--- CullBG
 
+    
+    ; load PosX/Y into tmp1/2
+    MAC CopyPos2Tmp
+
+    lda Player_Pos_X
+    sta tmp1
+    lda Player_Pos_Y
+    sta tmp2
+
+    ENDM ;--- CopyPos2Tmp
 
 ;############################
 ; Bank1
@@ -315,6 +325,10 @@ CheckDown: SUBROUTINE
     and Player_Orientation
     sta Player_Orientation
 
+    ; load PosX/Y into tmp1/2
+    CopyPos2Tmp
+    ;TODO use tmp1/2 for movement, check for collisions
+
     lda SWCHA_Shadow
     and #%00100000
     bne CheckUp
@@ -407,10 +421,7 @@ InputCheckEnd:
     lda #0
     sta CullDistance
     ; set up tmp1 and tmp2
-    lda Player_Pos_X
-    sta tmp1
-    lda Player_Pos_Y
-    sta tmp2
+    CopyPos2Tmp
 FarWall: SUBROUTINE
     CallWalkStepReturn FarWallRet
 FarWallRet:
@@ -423,10 +434,7 @@ FarWallRet:
     ; left corridor wall
 LeftWall: SUBROUTINE
     ; set up tmp1 and tmp2
-    lda Player_Pos_X
-    sta tmp1
-    lda Player_Pos_Y
-    sta tmp2
+    CopyPos2Tmp
     ; modify according to Player_Orientation
     lda Player_Orientation
     ; facing east?
@@ -482,10 +490,7 @@ LeftWallStep3:
     ; right corridor wall
 RightWall: SUBROUTINE
     ; set up tmp1 and tmp2
-    lda Player_Pos_X
-    sta tmp1
-    lda Player_Pos_Y
-    sta tmp2
+    CopyPos2Tmp
     ; modify according to Player_Orientation
     lda Player_Orientation
     ; facing east?
