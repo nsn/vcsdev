@@ -309,6 +309,10 @@ CheckLeft:
     and #%01000000
     bne CheckDown
     inc Player_Orientation
+    ; normalize Player_Orientation
+    lda #%00000011
+    and Player_Orientation
+    sta Player_Orientation
     ; Player Position
     ; joystick up/down
 CheckDown: SUBROUTINE
