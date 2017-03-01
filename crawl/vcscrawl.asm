@@ -309,10 +309,6 @@ CheckLeft:
     and #%01000000
     bne CheckDown
     inc Player_Orientation
-    ; mask unneeded bits so we don't need to do it later
-    lda Player_Orientation
-    and #%00000011
-    sta Player_Orientation
     ; Player Position
     ; joystick up/down
 CheckDown: SUBROUTINE
@@ -322,6 +318,7 @@ CheckDown: SUBROUTINE
     ; down pressed!
     ; modify Player Pos according to Player_Orientation
     lda Player_Orientation
+    and #%00000011
     ; facing east?
     cmp #%00
     bne .notEast
@@ -349,6 +346,7 @@ CheckUp: SUBROUTINE
     ; Up pressed!
     ; modify Player Pos according to Player_Orientation
     lda Player_Orientation
+    and #%00000011
     ; facing east?
     cmp #%00
     bne .notEast
