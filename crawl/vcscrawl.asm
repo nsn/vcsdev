@@ -309,13 +309,14 @@ CheckLeft:
     and #%01000000
     bne CheckDown
     inc Player_Orientation
+    ; Player Position
+    ; joystick up/down
+CheckDown: SUBROUTINE
     ; normalize Player_Orientation
     lda #%00000011
     and Player_Orientation
     sta Player_Orientation
-    ; Player Position
-    ; joystick up/down
-CheckDown: SUBROUTINE
+
     lda SWCHA_Shadow
     and #%00100000
     bne CheckUp
@@ -395,9 +396,7 @@ InputCheckEnd:
     ; 1 0  W
     ; 1 1  N
     ; calc direction index and store in x
-    lda #%00000011
-    and Player_Orientation
-    tax
+    ldx Player_Orientation
     ; load appropriate subroutine location into tmp4 and tmp5
     lda WalkingTableHI,x
     sta tmp5
@@ -432,7 +431,6 @@ LeftWall: SUBROUTINE
     sta tmp2
     ; modify according to Player_Orientation
     lda Player_Orientation
-    and #%00000011
     ; facing east?
     cmp #%00
     bne .notEast
@@ -492,7 +490,6 @@ RightWall: SUBROUTINE
     sta tmp2
     ; modify according to Player_Orientation
     lda Player_Orientation
-    and #%00000011
     ; facing east?
     cmp #%00
     bne .notEast
