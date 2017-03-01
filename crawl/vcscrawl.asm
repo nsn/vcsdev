@@ -1,4 +1,3 @@
-;TODO: instead of setting bgcol to pfcol cull by setting pf to #0 and set bgcol to third wall color
 ; VCS Crawl 
 ; (c) 2017 Michael Bayer
 ; 
@@ -12,6 +11,8 @@
 ;   cpx CullDistance
 ;   ...    
 ;   sta COLUBK
+; - try to color the walls directly facing the player by setting PF registers
+;   to #%00000000 and using a designated bgcol
 ;
 ; Loads of room for optimizations:
 ; - culling tests
@@ -78,6 +79,28 @@ PFCOL = $0E
     jmp (tmp4)
 
     ENDM ;--- CallWalkStepReturn
+
+
+    ; sets COLUBK to {1} or PFCOL
+    ; depending on X < / >= CullDistance
+    ; expects X to contain the section's draw distance
+    MAC CullBG
+    ; compare X to CullDistance
+    cpx CullDistance        ; +3
+    bcc .nocull             ; +2/3
+    ; X  >= CullDistance -> cull
+    lda PFCOL               ; +3 (6)
+    jmp .setbg              ; +3 (8)
+.nocull
+    ; X < CullDistance -> nocull
+    lda {1}                 ; +3 (5)
+    nop                     ; +2 (8) nop to equalize branch cycle counts
+.setbg 
+    ; set bg color
+    sta COLUBK
+
+    ENDM ;--- CullBG
+
 
 ;############################
 ; Bank1
@@ -614,18 +637,7 @@ Section1Top: SUBROUTINE
 
     ; use PF0 and first half of PF1 to set 
     ; bg color: even/odd or playfield
-    ; compare X (=1) to CullDistance
-    cpx CullDistance        ; +3
-    bcc .nocull             ; +2/3
-    ; X (=1) >= CullDistance -> cull
-    lda PFCOL               ; +3 (6)
-    jmp .setbg              ; +3 (8)
-.nocull
-    ; X < CullDistance -> nocull
-    lda BGCol_odd           ; +3 (5)
-    nop                     ; +2 (8) nop to equalize branch cycle counts
-.setbg  
-    sta COLUBK
+    CullBG BGCol_odd
 
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
@@ -659,16 +671,7 @@ Section2Top: SUBROUTINE
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    cpx CullDistance        ; +3
-    bcc .nocull             ; +2/3
-    ; X >= CullDistance -> cull
-    lda PFCOL               ; +3 (6)
-    jmp .setbg 
-.nocull
-    lda BGCol_even          ; +3 (5)
-    nop                     ; +2 (8) nop to equalize branch cycle counts
-.setbg
-    sta COLUBK
+    CullBG BGCol_even
 
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
@@ -703,16 +706,7 @@ Section3Top: SUBROUTINE
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    cpx CullDistance        ; +3
-    bcc .nocull             ; +2/3
-    ; X >= CullDistance -> cull
-    lda PFCOL               ; +3 (6)
-    jmp .setbg
-.nocull
-    lda BGCol_odd           ; +3 (5)
-    nop                     ; +2 (8) nop to equalize branch cycle counts
-.setbg
-    sta COLUBK
+    CullBG BGCol_odd
     
     lda (Sec3_l_ptr),y   ; +5
     and #%00001111          ; +2
@@ -787,16 +781,7 @@ Section3Bottom: SUBROUTINE
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    cpx CullDistance        ; +3
-    bcc .nocull             ; +2/3
-    ; X >= CullDistance -> cull
-    lda PFCOL               ; +3 (6)
-    jmp .setbg
-.nocull
-    lda BGCol_odd           ; +3 (5)
-    nop                     ; +2 (8) nop to equalize branch cycle counts
-.setbg
-    sta COLUBK
+    CullBG BGCol_odd
 
     lda (Sec3_l_ptr),y   ; +5
     and #%00001111          ; +2
@@ -833,16 +818,7 @@ Section2Bottom: SUBROUTINE
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    cpx CullDistance        ; +3
-    bcc .nocull             ; +2/3
-    ; X >= CullDistance -> cull
-    lda PFCOL               ; +3 (6)
-    jmp .setbg
-.nocull
-    lda BGCol_even          ; +3 (5)
-    nop                     ; +2 (8) nop to equalize branch cycle counts
-.setbg
-    sta COLUBK
+    CullBG BGCol_even
 
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
@@ -876,20 +852,8 @@ Section1Bottom: SUBROUTINE
     and #%11110000          ; +2
     sta PF1                 ; +3 
 
-    ; use PF0 and first half of PF1 to set 
     ; bg color: even/odd or playfield
-    ; compare X (=2) to CullDistance
-    cpx CullDistance        ; +3
-    bcc .nocull             ; +2/3
-    ; X (=2) >= CullDistance -> cull
-    lda PFCOL               ; +3 (6)
-    jmp .setbg              ; +3 (8)
-.nocull
-    ; X < CullDistance -> nocull
-    lda BGCol_odd           ; +3 (5)
-    nop                     ; +2 (8) nop to equalize branch cycle counts
-.setbg  
-    sta COLUBK
+    CullBG BGCol_odd
 
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
