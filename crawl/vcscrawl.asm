@@ -303,7 +303,7 @@ GameState:
     lda SWCHA
     ; break if nothing has changed
     cmp SWCHA_Shadow
-    beq InputCheckEnd
+    beq NoMovement
     ; store new SWCHA state
     sta SWCHA_Shadow
     ; Player orientation, 
@@ -338,51 +338,66 @@ CheckDown: SUBROUTINE
     ; facing east?
     cmp #%00
     bne .notEast
-    dec Player_Pos_X
-    jmp CheckUp
+    dec tmp1
+    jmp CheckMovementValid
 .notEast
     ; facing south?
     cmp #%01
     bne .notSouth
-    dec Player_Pos_Y
-    jmp CheckUp
+    dec tmp2
+    jmp CheckMovementValid
 .notSouth
     ; facing west?
     cmp #%10
     bne .notWest
-    inc Player_Pos_X
-    jmp CheckUp
+    inc tmp1
+    jmp CheckMovementValid
 .notWest
     ; facint north!
-    inc Player_Pos_Y
+    inc tmp2
+    jmp CheckMovementValid
 CheckUp: SUBROUTINE
     lda SWCHA_Shadow
     and #%00010000
-    bne InputCheckEnd
+    bne NoMovement
     ; Up pressed!
     ; modify Player Pos according to Player_Orientation
     lda Player_Orientation
     ; facing east?
     cmp #%00
     bne .notEast
-    inc Player_Pos_X
-    jmp InputCheckEnd
+    inc tmp1
+    jmp CheckMovementValid
 .notEast
     ; facing south?
     cmp #%01
     bne .notSouth
-    inc Player_Pos_Y
-    jmp InputCheckEnd
+    inc tmp2
+    jmp CheckMovementValid
 .notSouth
     ; facing west?
     cmp #%10
     bne .notWest
-    dec Player_Pos_X
-    jmp InputCheckEnd
+    dec tmp1
+    jmp CheckMovementValid
 .notWest
     ; facint north!
-    dec Player_Pos_Y
-InputCheckEnd:
+    dec tmp2
+CheckMovementValid:
+    ; test if move is valid
+    jsr TestTile
+    bne Collision
+    ; TODO: implement collision sound
+    ; copy tmp1/2 back to PosX/Y
+    lda tmp1
+    sta Player_Pos_X
+    lda tmp2
+    sta Player_Pos_Y
+    jmp NoMovement
+Collision:
+    nop
+NoMovement:
+
 
     ; set playfield data pointers 
     ; according to position in maze
