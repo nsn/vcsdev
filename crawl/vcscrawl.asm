@@ -322,7 +322,6 @@ CheckDown: SUBROUTINE
     ; down pressed!
     ; modify Player Pos according to Player_Orientation
     lda Player_Orientation
-    and #%00000011
     ; facing east?
     cmp #%00
     bne .notEast
@@ -350,7 +349,6 @@ CheckUp: SUBROUTINE
     ; Up pressed!
     ; modify Player Pos according to Player_Orientation
     lda Player_Orientation
-    and #%00000011
     ; facing east?
     cmp #%00
     bne .notEast
