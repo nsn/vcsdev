@@ -5,8 +5,6 @@
 ; TODO
 ; - last section (3) looks too large, 
 ;   maybe reduce to 12 scanlines instead of 16?
-; - move Player_Orientation masking (and #%00000011) to CheckLeft/Right,
-;   -> saves cycles
 ; - try to color the walls directly facing the player by setting PF registers
 ;   to #%00000000 and using a designated bgcol
 ;
