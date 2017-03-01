@@ -7,10 +7,6 @@
 ;   maybe reduce to 12 scanlines instead of 16?
 ; - move Player_Orientation masking (and #%00000011) to CheckLeft/Right,
 ;   -> saves cycles
-; - make a CULL BGCol_even/odd Macro
-;   cpx CullDistance
-;   ...    
-;   sta COLUBK
 ; - try to color the walls directly facing the player by setting PF registers
 ;   to #%00000000 and using a designated bgcol
 ;
