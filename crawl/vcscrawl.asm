@@ -62,15 +62,6 @@ PFCOL = $0E
     pha
     lda #<(.TARGET-1)
     pha
-    ; calc direction index and store in x
-;    lda #%00000011
-;    and Player_Orientation
-;    tax
-;    ; load appropriate subroutine location into tmp4 and tmp5
-;    lda WalkingTableHI,x
-;    sta tmp5
-;    lda WalkingTableLO,x
-;    sta tmp4
     ; jump to walk* subroutine
     jmp (tmp4)
 
