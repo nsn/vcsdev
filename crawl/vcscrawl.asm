@@ -74,7 +74,7 @@ PFCOL = $0E
     cpx CullDistance        ; +3
     bcc .nocull             ; +2/3
     ; X  >= CullDistance -> cull
-    lda PFCOL               ; +3 (6)
+    lda #PFCOL              ; +3 (6)
     jmp .setbg              ; +3 (8)
 .nocull
     ; X < CullDistance -> nocull
@@ -327,7 +327,6 @@ CheckDown: SUBROUTINE
 
     ; load PosX/Y into tmp1/2
     CopyPos2Tmp
-    ;TODO use tmp1/2 for movement, check for collisions
 
     lda SWCHA_Shadow
     and #%00100000
