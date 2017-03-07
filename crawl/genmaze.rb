@@ -165,9 +165,9 @@ end
 # output default
 
 puts "MAZEDATA_0"
-quadrants.each_index { |x|
-    quadrants[x].each_index { |y|
-        quadrants[x][y].each_index { |z|
+4.times { |y|
+    4.times { |x|
+        2.times { |z|
             puts "MAZE_%d_%d_%d" % [x , y, z]
             quadrants[x][y][z].each { |b|
                 #puts "    .byte #%%%08b" % [reverse(b)]
@@ -176,6 +176,17 @@ quadrants.each_index { |x|
         }
     }
 }
+#quadrants.each_index { |x|
+#    quadrants[x].each_index { |y|
+#        quadrants[x][y].each_index { |z|
+#            puts "MAZE_%d_%d_%d" % [x , y, z]
+#            quadrants[x][y][z].each { |b|
+#                #puts "    .byte #%%%08b" % [reverse(b)]
+#                puts "    .byte #%%%08b" % [b]
+#            }
+#        }
+#    }
+#}
 
 # output transposed
 

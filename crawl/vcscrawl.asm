@@ -185,6 +185,7 @@ ClearRam:
     lda #0
 InitMaze:
     sta Maze_a_a,x
+    clc
     adc #16
     inx
     cpx #16
@@ -192,7 +193,6 @@ InitMaze:
 ; init player pos
     lda #1
     sta Player_Pos_X 
-    lda #2
     sta Player_Pos_Y
 
 ; set TIA behaviour
