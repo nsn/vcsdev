@@ -9,6 +9,7 @@
 ;   to #%00000000 and using a designated bgcol
 ;
 ; Loads of room for optimizations:
+; - only update wall pointers and CullDistance after movement actually happened
 ; - culling tests
 ;   these decide whether to use the current odd/even color or use
 ;   the playfield color to simulate a solid wall
@@ -441,6 +442,9 @@ FarWall: SUBROUTINE
 FarWallRet:
     inc CullDistance
     beq .done
+    lda #5
+    cmp CullDistance
+    bcc .done
     jsr TestTile
     beq FarWall
 .done
