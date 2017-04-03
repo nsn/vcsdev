@@ -206,6 +206,14 @@ InitMaze:
     ; set pf behaviour
     lda #%00000000
     sta CTRLPF
+    ; set player color
+    lda #$38
+    sta COLUP0
+    sta COLUP1
+    ; set Player sie
+    lda #7
+    sta NUSIZ0
+    sta NUSIZ1
 
 ;----------------------------
 ; Main Loop
@@ -740,6 +748,9 @@ FarEnd: SUBROUTINE
     ldy #31
 .lineLoop
     ; ScanCycle 62 - 10 cycles left for checks
+    ; load player gfx
+    ldx SKELETON_P0,y
+    stx GRP0
     ; test if far wall should be solid or BG
     lda #4              ; +2
     ; we only used 5 cycles, but WSYNC takes 3...
@@ -764,7 +775,8 @@ FarEnd: SUBROUTINE
     sta PF2
 
     ; wait for PF1 to finish
-    SLEEP 15
+    sta RESP0
+    SLEEP 12
 
     sta PF0
     lda #$ff
@@ -975,6 +987,8 @@ WalkingTableLO:
 
     ; playfield data
     include "pfdata.inc"
+    ; sprites
+    include "mobdata.inc"
     ; maze data needs to be page aligned...
     ORG $FD00
     include "mazedata.inc"
