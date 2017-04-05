@@ -17,7 +17,7 @@
 ;   to #%00000000 and using a designated bgcol
 ;
 ; Loads of room for optimizations:
-; - only update wall pointers and CullDistance after movement actually happened
+; - only update wall pointers and Vb_DrawDist after movement actually happened
 ; - culling tests
 ;   these decide whether to use the current odd/even color or use
 ;   the playfield color to simulate a solid wall
@@ -57,7 +57,7 @@ PFCOL = $0E
 ; Macros   
 ;----------------------------
 
-    ; "walks" a step in the direction defined by Player_Orientation
+    ; "walks" a step in the direction defined by Vb_PlayerOrientation
     ; basically just calls the WalkEast/South/West/North subroutine
     ; pointed to by Vb_tmp4 and Vb_tmp5, then returns to {1}
     ; expects Vb_tmp4 and Vb_tmp5 to point to the appropriate subroutine
@@ -76,17 +76,17 @@ PFCOL = $0E
 
 
     ; sets COLUBK to {1} or PFCOL
-    ; depending on X < / >= CullDistance
+    ; depending on X < / >= Vb_DrawDist
     ; expects X to contain the section's draw distance
     MAC CullBG
-    ; compare X to CullDistance
-    cpx CullDistance        ; +3
+    ; compare X to Vb_DrawDist
+    cpx Vb_DrawDist        ; +3
     bcc .nocull             ; +2/3
-    ; X  >= CullDistance -> cull
+    ; X  >= Vb_DrawDist -> cull
     lda #PFCOL              ; +3 (6)
     jmp .setbg              ; +3 (8)
 .nocull
-    ; X < CullDistance -> nocull
+    ; X < Vb_DrawDist -> nocull
     lda {1}                 ; +3 (5)
     nop                     ; +2 (8) nop to equalize branch cycle counts
 .setbg 
@@ -99,9 +99,9 @@ PFCOL = $0E
     ; load PosX/Y into Vb_tmp1/2
     MAC CopyPos2Tmp
 
-    lda Player_Pos_X
+    lda Vb_PlayerPosX
     sta Vb_tmp1
-    lda Player_Pos_Y
+    lda Vb_PlayerPosY
     sta Vb_tmp2
 
     ENDM ;--- CopyPos2Tmp
@@ -123,51 +123,51 @@ Vb_tmp4                ds 1
 Vb_tmp5                ds 1
 Vb_tmp6                ds 1
 ; shadow registers
-SWCHA_Shadow        ds 1
+Vb_SWCHA_Shadow        ds 1
 ; player data
-Player_Pos_X        ds 1
-Player_Pos_Y        ds 1
+Vb_PlayerPosX        ds 1
+Vb_PlayerPosY        ds 1
 ; 0 0  E
 ; 0 1  S
 ; 1 0  W
 ; 1 1  N
-Player_Orientation  ds 1
+Vb_PlayerOrientation  ds 1
 ; maze data
 ; 4x4 = 16 bytes
-Maze_a_a        ds 1 
-Maze_a_b        ds 1
-Maze_a_c        ds 1
-Maze_a_d        ds 1
-Maze_b_a        ds 1
-Maze_b_b        ds 1
-Maze_b_c        ds 1
-Maze_b_d        ds 1
-Maze_c_a        ds 1
-Maze_c_b        ds 1
-Maze_c_c        ds 1
-Maze_c_d        ds 1
-Maze_d_a        ds 1
-Maze_d_b        ds 1
-Maze_d_c        ds 1
-Maze_d_d        ds 1
+Vb_MazeAA        ds 1 
+Vb_MazeAB        ds 1
+Vb_MazeAC        ds 1
+Vb_MazeAD        ds 1
+Vb_MazeBA        ds 1
+Vb_MazeBB        ds 1
+Vb_MazeBC        ds 1
+Vb_MazeBD        ds 1
+Vb_MazeCA        ds 1
+Vb_MazeCB        ds 1
+Vb_MazeCC        ds 1
+Vb_MazeCD        ds 1
+Vb_MazeDA        ds 1
+Vb_MazeDB        ds 1
+Vb_MazeDC        ds 1
+Vb_MazeDD        ds 1
 ; wall section pointers:
 ; 4*2*2 = 16 bytes
-Sec0_l_ptr       ds 2
-Sec0_r_ptr       ds 2
-Sec1_l_ptr       ds 2
-Sec1_r_ptr       ds 2
-Sec2_l_ptr       ds 2
-Sec2_r_ptr       ds 2
-Sec3_l_ptr       ds 2
-Sec3_r_ptr       ds 2
+Vptr_Sec0L       ds 2
+Vptr_Sec0R       ds 2
+Vptr_Sec1L       ds 2
+Vptr_Sec1R       ds 2
+Vptr_Sec2L       ds 2
+Vptr_Sec2R       ds 2
+Vptr_Sec3L       ds 2
+Vptr_Sec3R       ds 2
 ; Wall states
-Wall_Left       ds 1
-Wall_Right      ds 1
-; basically how far away is the far wall?
-CullDistance     ds 1
+Vb_LeftWall       ds 1
+Vb_RightWall      ds 1
+; basically how far to the end of the tunnel?
+Vb_DrawDist     ds 1
 ; BGColor value, 2 bytes
-BGCol_odd           ds 1
-BGCol_even          ds 1
+Vb_BGColOdd           ds 1
+Vb_BGColEven          ds 1
 
     echo "----",($100 - *) , "bytes of RAM left"
 ;--- end Variables 
@@ -196,7 +196,7 @@ ClearRam:
     ldx #0
     lda #0
 InitMaze:
-    sta Maze_a_a,x
+    sta Vb_MazeAA,x
     clc
     adc #16
     inx
@@ -204,8 +204,8 @@ InitMaze:
     bne InitMaze
 ; init player pos
     lda #1
-    sta Player_Pos_X 
-    sta Player_Pos_Y
+    sta Vb_PlayerPosX 
+    sta Vb_PlayerPosY
 
 ; set TIA behaviour
     ; set bg color to black ($0)
@@ -287,7 +287,7 @@ TestTile: SUBROUTINE
     ; store quadrant offset in x
     tax
     ; load value of quadrant pointer into a
-    lda Maze_a_a,x
+    lda Vb_MazeAA,x
 
     ; store it
     sta Vb_tmp3
@@ -299,7 +299,7 @@ TestTile: SUBROUTINE
     ; store in x
     tax
     ; load maze value and
-    ; shift so that Player_Pos_X is at lsb
+    ; shift so that Vb_PlayerPosX is at lsb
     lda Vb_tmp1
     and #%00000111
     tay
@@ -322,38 +322,38 @@ GameState:
     ; joystick input
     lda SWCHA
     ; break if nothing has changed
-    cmp SWCHA_Shadow
+    cmp Vb_SWCHA_Shadow
     beq NoMovement
     ; store new SWCHA state
-    sta SWCHA_Shadow
+    sta Vb_SWCHA_Shadow
     ; Player orientation, 
     ; joystick left/right
 CheckRight:
     and #%10000000
     bne CheckLeft
-    dec Player_Orientation
+    dec Vb_PlayerOrientation
 CheckLeft:
-    lda SWCHA_Shadow
+    lda Vb_SWCHA_Shadow
     and #%01000000
     bne CheckDown
-    inc Player_Orientation
+    inc Vb_PlayerOrientation
     ; Player Position
     ; joystick up/down
 CheckDown: SUBROUTINE
-    ; normalize Player_Orientation
+    ; normalize Vb_PlayerOrientation
     lda #%00000011
-    and Player_Orientation
-    sta Player_Orientation
+    and Vb_PlayerOrientation
+    sta Vb_PlayerOrientation
 
     ; load PosX/Y into Vb_tmp1/2
     CopyPos2Tmp
 
-    lda SWCHA_Shadow
+    lda Vb_SWCHA_Shadow
     and #%00100000
     bne CheckUp
     ; down pressed!
-    ; modify Player Pos according to Player_Orientation
-    lda Player_Orientation
+    ; modify Player Pos according to Vb_PlayerOrientation
+    lda Vb_PlayerOrientation
     ; facing east?
     cmp #%00
     bne .notEast
@@ -376,12 +376,12 @@ CheckDown: SUBROUTINE
     inc Vb_tmp2
     jmp CheckMovementValid
 CheckUp: SUBROUTINE
-    lda SWCHA_Shadow
+    lda Vb_SWCHA_Shadow
     and #%00010000
     bne NoMovement
     ; Up pressed!
-    ; modify Player Pos according to Player_Orientation
-    lda Player_Orientation
+    ; modify Player Pos according to Vb_PlayerOrientation
+    lda Vb_PlayerOrientation
     ; facing east?
     cmp #%00
     bne .notEast
@@ -409,9 +409,9 @@ CheckMovementValid:
     ; TODO: implement collision sound
     ; copy Vb_tmp1/2 back to PosX/Y
     lda Vb_tmp1
-    sta Player_Pos_X
+    sta Vb_PlayerPosX
     lda Vb_tmp2
-    sta Player_Pos_Y
+    sta Vb_PlayerPosY
     jmp NoMovement
 Collision:
     nop
@@ -422,27 +422,27 @@ NoMovement:
     ; according to position in maze
     ; first: set all to solid
 
-    SET_POINTER Sec0_l_ptr, PF_1_0 
-    SET_POINTER Sec0_r_ptr, PF_1_1
+    SET_POINTER Vptr_Sec0L, PF_1_0 
+    SET_POINTER Vptr_Sec0R, PF_1_1
 
-    SET_POINTER Sec1_l_ptr, PF_1_1 
-    SET_POINTER Sec1_r_ptr, PF_1_1
+    SET_POINTER Vptr_Sec1L, PF_1_1 
+    SET_POINTER Vptr_Sec1R, PF_1_1
 
-    SET_POINTER Sec2_l_ptr, PF_1_1 
-    SET_POINTER Sec2_r_ptr, PF_1_0
+    SET_POINTER Vptr_Sec2L, PF_1_1 
+    SET_POINTER Vptr_Sec2R, PF_1_0
 
-    SET_POINTER Sec3_l_ptr, PF_1_0 
-    SET_POINTER Sec3_r_ptr, PF_1_0
+    SET_POINTER Vptr_Sec3L, PF_1_0 
+    SET_POINTER Vptr_Sec3R, PF_1_0
 
     ; set up Vb_tmp4 and Vb_tmp5 as pointer to the correct walking subrouting
-    ; D0 of Player_Orientation: 0 -> E/W, 1 -> N,S
-    ; D1 of Player_Orientation: 0 -> inc, 1-> dec
+    ; D0 of Vb_PlayerOrientation: 0 -> E/W, 1 -> N,S
+    ; D1 of Vb_PlayerOrientation: 0 -> inc, 1-> dec
     ; 0 0  E
     ; 0 1  S
     ; 1 0  W
     ; 1 1  N
     ; calc direction index and store in x
-    ldx Player_Orientation
+    ldx Vb_PlayerOrientation
     ; load appropriate subroutine location into Vb_tmp4 and Vb_tmp5
     lda WalkingTableHI,x
     sta Vb_tmp5
@@ -455,19 +455,19 @@ NoMovement:
 
 
     ; far wall
-    ; calculate CullDistance
+    ; calculate Vb_DrawDist
     ; reset
     lda #0
-    sta CullDistance
+    sta Vb_DrawDist
     ; set up Vb_tmp1 and Vb_tmp2
     CopyPos2Tmp
 FarWall: SUBROUTINE
     CallWalkStepReturn FarWallRet
 FarWallRet:
-    inc CullDistance
+    inc Vb_DrawDist
     beq .done
     lda #5
-    cmp CullDistance
+    cmp Vb_DrawDist
     bcc .done
     jsr TestTile
     beq FarWall
@@ -475,12 +475,12 @@ FarWallRet:
 
     ; left corridor wall
     lda #$ff
-    sta Wall_Left
+    sta Vb_LeftWall
 LeftWall: SUBROUTINE
     ; set up Vb_tmp1 and Vb_tmp2
     CopyPos2Tmp
-    ; modify according to Player_Orientation
-    lda Player_Orientation
+    ; modify according to Vb_PlayerOrientation
+    lda Vb_PlayerOrientation
     ; facing east?
     cmp #%00
     bne .notEast
@@ -505,10 +505,10 @@ LeftWall: SUBROUTINE
     ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid0
-    SET_POINTER Sec0_l_ptr, PF_NONE
+    SET_POINTER Vptr_Sec0L, PF_NONE
     ; clear d0 of LeftWall
     lda #%11111110
-    sta Wall_Left
+    sta Vb_LeftWall
 .solid0
     ; walk one step formward
     CallWalkStepReturn LeftWallStep1
@@ -516,11 +516,11 @@ LeftWallStep1:
     ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid1
-    SET_POINTER Sec1_l_ptr, PF_NONE
+    SET_POINTER Vptr_Sec1L, PF_NONE
     ; clear d1 of LeftWall
-    lda Wall_Left
+    lda Vb_LeftWall
     and #%11111101
-    sta Wall_Left
+    sta Vb_LeftWall
 .solid1
     ; walk one step formward
     CallWalkStepReturn LeftWallStep2
@@ -528,11 +528,11 @@ LeftWallStep2:
     ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid2
-    SET_POINTER Sec2_l_ptr, PF_NONE
+    SET_POINTER Vptr_Sec2L, PF_NONE
     ; clear d2 of LeftWall
-    lda Wall_Left
+    lda Vb_LeftWall
     and #%11111011
-    sta Wall_Left
+    sta Vb_LeftWall
 .solid2
     ; walk one step formward
     CallWalkStepReturn LeftWallStep3
@@ -540,18 +540,18 @@ LeftWallStep3:
     ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid3
-    SET_POINTER Sec3_l_ptr, PF_NONE
+    SET_POINTER Vptr_Sec3L, PF_NONE
     ; clear d3 of LeftWall
-    lda Wall_Left
+    lda Vb_LeftWall
     and #%11110111
-    sta Wall_Left 
+    sta Vb_LeftWall 
 .solid3
     ; right corridor wall
 RightWall: SUBROUTINE
     ; set up Vb_tmp1 and Vb_tmp2
     CopyPos2Tmp
-    ; modify according to Player_Orientation
-    lda Player_Orientation
+    ; modify according to Vb_PlayerOrientation
+    lda Vb_PlayerOrientation
     ; facing east?
     cmp #%00
     bne .notEast
@@ -576,7 +576,7 @@ RightWall: SUBROUTINE
     ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid0
-    SET_POINTER Sec0_r_ptr, PF_NONE
+    SET_POINTER Vptr_Sec0R, PF_NONE
 .solid0
     ; walk one step formward
     CallWalkStepReturn RightWallStep1
@@ -584,7 +584,7 @@ RightWallStep1:
     ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid1
-    SET_POINTER Sec1_r_ptr, PF_NONE
+    SET_POINTER Vptr_Sec1R, PF_NONE
 .solid1
     ; walk one step formward
     CallWalkStepReturn RightWallStep2
@@ -592,7 +592,7 @@ RightWallStep2:
     ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid2
-    SET_POINTER Sec2_r_ptr, PF_NONE
+    SET_POINTER Vptr_Sec2R, PF_NONE
 .solid2
     ; walk one step formward
     CallWalkStepReturn RightWallStep3
@@ -600,15 +600,15 @@ RightWallStep3:
     ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid3
-    SET_POINTER Sec3_r_ptr, PF_NONE
+    SET_POINTER Vptr_Sec3R, PF_NONE
 .solid3
      
     ; set background color
     ; according to position in maze
 BackgroundColor: SUBROUTINE
     clc
-    lda Player_Pos_X
-    adc Player_Pos_Y
+    lda Vb_PlayerPosX
+    adc Vb_PlayerPosY
     and #1
     beq .odd
     ldx #BGCOL_LIGHT
@@ -618,8 +618,8 @@ BackgroundColor: SUBROUTINE
     ldx #BGCOL_DARK
     ldy #BGCOL_LIGHT
 .bgcolend
-    stx BGCol_odd
-    sty BGCol_even
+    stx Vb_BGColOdd
+    sty Vb_BGColEven
     sty COLUBK
 
 

@@ -6,9 +6,9 @@ Section0Top: SUBROUTINE
 .lineLoop
     sta WSYNC
     ; bg color
-    lda BGCol_even
+    lda Vb_BGColEven
     sta COLUBK
-    lda (Sec0_l_ptr),y   ; +5
+    lda (Vptr_Sec0L),y   ; +5
     sta PF0                 ; +3 
     lda #0                  ; +2    
     sta PF1                 ; +3 
@@ -21,7 +21,7 @@ Section0Top: SUBROUTINE
     sta PF1                 ; +3 (8)
     ; wait for P23 to finish drawing
     SLEEP 6
-    lda (Sec0_r_ptr),y
+    lda (Vptr_Sec0R),y
     and #%11110000
     sta PF2
     dey
@@ -32,7 +32,7 @@ Section0Top: SUBROUTINE
 Section1Top: SUBROUTINE
     ldy #15
 .lineLoop
-    ; prepare CullDistance comparison for later
+    ; prepare Vb_DrawDist comparison for later
     ldx #1                  ; +2
     ; prepare PF0 value
     lda #%11110000
@@ -41,13 +41,13 @@ Section1Top: SUBROUTINE
 
     sta PF0
     ; set up PF1
-    lda (Sec1_l_ptr),y      ; +5
+    lda (Vptr_Sec1L),y      ; +5
     and #%11110000          ; +2
     sta PF1                 ; +3 
 
     ; use PF0 and first half of PF1 to set 
     ; bg color: even/odd or playfield
-    CullBG BGCol_odd
+    CullBG Vb_BGColOdd
 
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
@@ -58,7 +58,7 @@ Section1Top: SUBROUTINE
     ; A still is #0
     sta PF0                 ; +3 (8)
     sta PF1                 ; +3 (8)
-    lda (Sec1_r_ptr),y
+    lda (Vptr_Sec1R),y
     ora #%11110000
     sta PF2
 
@@ -70,18 +70,18 @@ Section1Top: SUBROUTINE
 Section2Top: SUBROUTINE
     ldy #15
 .lineLoop
-    ; prepare CullDistance comparison for later
+    ; prepare Vb_DrawDist comparison for later
     ldx #2                  ; +2
     lda #%11110000
     sta WSYNC
 
     sta PF0
-    lda (Sec2_l_ptr),y   ; +5
+    lda (Vptr_Sec2L),y   ; +5
     ora #%11110000          ; +2
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    CullBG BGCol_even
+    CullBG Vb_BGColEven
 
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
@@ -91,7 +91,7 @@ Section2Top: SUBROUTINE
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
-    lda (Sec2_r_ptr),y
+    lda (Vptr_Sec2R),y
     and #%00001111
     sta PF1                 ; +3 (8)
     lda #%11111111
@@ -106,7 +106,7 @@ Section3Top: SUBROUTINE
     ldy #15
 .lineLoop
     ; ScanCycle 64 - 8 cycles left...
-    ; prepare CullDistance comparison for later
+    ; prepare Vb_DrawDist comparison for later
     ldx #3                  ; +2
     lda #%11111111
     ; out of cycles - need to strobe WSYNC
@@ -116,9 +116,9 @@ Section3Top: SUBROUTINE
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    CullBG BGCol_odd
+    CullBG Vb_BGColOdd
     
-    lda (Sec3_l_ptr),y   ; +5
+    lda (Vptr_Sec3L),y   ; +5
     and #%00001111          ; +2
     sta PF2                 ; +3 (18) 
 
@@ -127,7 +127,7 @@ Section3Top: SUBROUTINE
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
-    lda (Sec3_r_ptr),y
+    lda (Vptr_Sec3R),y
     ora #%00001111
     sta PF1                 ; +3 (8)
     lda #%11111111
@@ -151,7 +151,7 @@ FarEnd: SUBROUTINE
     ; we only used 5 cycles, but WSYNC takes 3...
     sta WSYNC
     ; now we have ~22 cycles to set bgcol and PF0 
-    cmp CullDistance    ; +3 (5)
+    cmp Vb_DrawDist    ; +3 (5)
     bcc .nocull         ; +2/3 
     lda #PFCOL          ; +2 (5)
     jmp .setbg
@@ -186,7 +186,7 @@ FarEnd: SUBROUTINE
 Section3Bottom: SUBROUTINE
     ldy #0
 .lineLoop
-    ; prepare CullDistance comparison for later
+    ; prepare Vb_DrawDist comparison for later
     ldx #3                  ; +2
     lda #%11111111
     ; plenty of cycles left, end line - need to strobe WSYNC
@@ -195,9 +195,9 @@ Section3Bottom: SUBROUTINE
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    CullBG BGCol_odd
+    CullBG Vb_BGColOdd
 
-    lda (Sec3_l_ptr),y   ; +5
+    lda (Vptr_Sec3L),y   ; +5
     and #%00001111          ; +2
     sta PF2                 ; +3 (18) 
 
@@ -206,7 +206,7 @@ Section3Bottom: SUBROUTINE
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
-    lda (Sec3_r_ptr),y
+    lda (Vptr_Sec3R),y
     ora #%00001111
     sta PF1                 ; +3 (8)
     lda #%11111111
@@ -221,18 +221,18 @@ Section3Bottom: SUBROUTINE
 Section2Bottom: SUBROUTINE
     ldy #0
 .lineLoop
-    ; prepare CullDistance comparison for later
+    ; prepare Vb_DrawDist comparison for later
     ldx #2                  ; +2
     lda #%11110000
     sta WSYNC
 
     sta PF0
-    lda (Sec2_l_ptr),y   ; +5
+    lda (Vptr_Sec2L),y   ; +5
     ora #%11110000          ; +2
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    CullBG BGCol_even
+    CullBG Vb_BGColEven
 
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
@@ -242,7 +242,7 @@ Section2Bottom: SUBROUTINE
 
     lda #0                  ;    
     sta PF0                 ; +3 (8)
-    lda (Sec2_r_ptr),y
+    lda (Vptr_Sec2R),y
     and #%00001111
     sta PF1                 ; +3 (8)
     lda #%11111111
@@ -257,17 +257,17 @@ Section2Bottom: SUBROUTINE
 Section1Bottom: SUBROUTINE
     ldy #0
 .lineLoop
-    ; prepare CullDistance comparison for later
+    ; prepare Vb_DrawDist comparison for later
     ldx #1                  ; +2
     lda #%11110000
     sta WSYNC
     sta PF0
-    lda (Sec1_l_ptr),y   ; +5
+    lda (Vptr_Sec1L),y   ; +5
     and #%11110000          ; +2
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    CullBG BGCol_odd
+    CullBG Vb_BGColOdd
 
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
@@ -278,7 +278,7 @@ Section1Bottom: SUBROUTINE
     lda #0                  ;    
     sta PF0                 ; +3 (8)
     sta PF1                 ; +3 (8)
-    lda (Sec1_r_ptr),y
+    lda (Vptr_Sec1R),y
     ora #%11110000
     sta PF2
 
@@ -294,9 +294,9 @@ Section0Bottom: SUBROUTINE
 .lineLoop
     sta WSYNC
     ; bg color
-    lda BGCol_even
+    lda Vb_BGColEven
     sta COLUBK
-    lda (Sec0_l_ptr),y   ; +5
+    lda (Vptr_Sec0L),y   ; +5
     sta PF0                 ; +3 
     lda #0                  ; +2    
     sta PF1                 ; +3 
@@ -308,7 +308,7 @@ Section0Bottom: SUBROUTINE
     sta PF1                 ; +3 (8)
     ; wait for P23 to finish drawing
     SLEEP 8
-    lda (Sec0_r_ptr),y
+    lda (Vptr_Sec0R),y
     and #%11110000
     sta PF2
 
