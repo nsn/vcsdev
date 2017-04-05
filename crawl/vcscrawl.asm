@@ -61,7 +61,7 @@ PFCOL = $0E
     ; basically just calls the WalkEast/South/West/North subroutine
     ; pointed to by Vb_tmp4 and Vb_tmp5, then returns to {1}
     ; expects Vb_tmp4 and Vb_tmp5 to point to the appropriate subroutine
-    MAC CallWalkStepReturn
+    MAC M_CallWalkStepReturn
 
 .TARGET SET {1}
     ; push target address to stack
@@ -72,13 +72,13 @@ PFCOL = $0E
     ; jump to walk* subroutine
     jmp (Vb_tmp4)
 
-    ENDM ;--- CallWalkStepReturn
+    ENDM ;--- M_CallWalkStepReturn
 
 
     ; sets COLUBK to {1} or PFCOL
     ; depending on X < / >= Vb_DrawDist
     ; expects X to contain the section's draw distance
-    MAC CullBG
+    MAC M_CullBG
     ; compare X to Vb_DrawDist
     cpx Vb_DrawDist        ; +3
     bcc .nocull             ; +2/3
@@ -93,18 +93,18 @@ PFCOL = $0E
     ; set bg color
     sta COLUBK
 
-    ENDM ;--- CullBG
+    ENDM ;--- M_CullBG
 
     
     ; load PosX/Y into Vb_tmp1/2
-    MAC CopyPos2Tmp
+    MAC M_CopyPos2Tmp
 
     lda Vb_PlayerPosX
     sta Vb_tmp1
     lda Vb_PlayerPosY
     sta Vb_tmp2
 
-    ENDM ;--- CopyPos2Tmp
+    ENDM ;--- M_CopyPos2Tmp
 
 ;############################
 ; Bank1
@@ -346,7 +346,7 @@ CheckDown: SUBROUTINE
     sta Vb_PlayerOrientation
 
     ; load PosX/Y into Vb_tmp1/2
-    CopyPos2Tmp
+    M_CopyPos2Tmp
 
     lda Vb_SWCHA_Shadow
     and #%00100000
@@ -460,9 +460,9 @@ NoMovement:
     lda #0
     sta Vb_DrawDist
     ; set up Vb_tmp1 and Vb_tmp2
-    CopyPos2Tmp
+    M_CopyPos2Tmp
 FarWall: SUBROUTINE
-    CallWalkStepReturn FarWallRet
+    M_CallWalkStepReturn FarWallRet
 FarWallRet:
     inc Vb_DrawDist
     beq .done
@@ -478,7 +478,7 @@ FarWallRet:
     sta Vb_LeftWall
 LeftWall: SUBROUTINE
     ; set up Vb_tmp1 and Vb_tmp2
-    CopyPos2Tmp
+    M_CopyPos2Tmp
     ; modify according to Vb_PlayerOrientation
     lda Vb_PlayerOrientation
     ; facing east?
@@ -511,7 +511,7 @@ LeftWall: SUBROUTINE
     sta Vb_LeftWall
 .solid0
     ; walk one step formward
-    CallWalkStepReturn LeftWallStep1
+    M_CallWalkStepReturn LeftWallStep1
 LeftWallStep1:
     ; test tile, set wall pointer accordingly
     jsr TestTile
@@ -523,7 +523,7 @@ LeftWallStep1:
     sta Vb_LeftWall
 .solid1
     ; walk one step formward
-    CallWalkStepReturn LeftWallStep2
+    M_CallWalkStepReturn LeftWallStep2
 LeftWallStep2:
     ; test tile, set wall pointer accordingly
     jsr TestTile
@@ -535,7 +535,7 @@ LeftWallStep2:
     sta Vb_LeftWall
 .solid2
     ; walk one step formward
-    CallWalkStepReturn LeftWallStep3
+    M_CallWalkStepReturn LeftWallStep3
 LeftWallStep3:
     ; test tile, set wall pointer accordingly
     jsr TestTile
@@ -549,7 +549,7 @@ LeftWallStep3:
     ; right corridor wall
 RightWall: SUBROUTINE
     ; set up Vb_tmp1 and Vb_tmp2
-    CopyPos2Tmp
+    M_CopyPos2Tmp
     ; modify according to Vb_PlayerOrientation
     lda Vb_PlayerOrientation
     ; facing east?
@@ -579,7 +579,7 @@ RightWall: SUBROUTINE
     SET_POINTER Vptr_Sec0R, PF_NONE
 .solid0
     ; walk one step formward
-    CallWalkStepReturn RightWallStep1
+    M_CallWalkStepReturn RightWallStep1
 RightWallStep1:
     ; test tile, set wall pointer accordingly
     jsr TestTile
@@ -587,7 +587,7 @@ RightWallStep1:
     SET_POINTER Vptr_Sec1R, PF_NONE
 .solid1
     ; walk one step formward
-    CallWalkStepReturn RightWallStep2
+    M_CallWalkStepReturn RightWallStep2
 RightWallStep2:
     ; test tile, set wall pointer accordingly
     jsr TestTile
@@ -595,7 +595,7 @@ RightWallStep2:
     SET_POINTER Vptr_Sec2R, PF_NONE
 .solid2
     ; walk one step formward
-    CallWalkStepReturn RightWallStep3
+    M_CallWalkStepReturn RightWallStep3
 RightWallStep3:
     ; test tile, set wall pointer accordingly
     jsr TestTile

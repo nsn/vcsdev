@@ -47,7 +47,7 @@ Section1Top: SUBROUTINE
 
     ; use PF0 and first half of PF1 to set 
     ; bg color: even/odd or playfield
-    CullBG Vb_BGColOdd
+    M_CullBG Vb_BGColOdd
 
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
@@ -81,7 +81,7 @@ Section2Top: SUBROUTINE
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    CullBG Vb_BGColEven
+    M_CullBG Vb_BGColEven
 
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
@@ -116,7 +116,7 @@ Section3Top: SUBROUTINE
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    CullBG Vb_BGColOdd
+    M_CullBG Vb_BGColOdd
     
     lda (Vptr_Sec3L),y   ; +5
     and #%00001111          ; +2
@@ -195,7 +195,7 @@ Section3Bottom: SUBROUTINE
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    CullBG Vb_BGColOdd
+    M_CullBG Vb_BGColOdd
 
     lda (Vptr_Sec3L),y   ; +5
     and #%00001111          ; +2
@@ -232,7 +232,7 @@ Section2Bottom: SUBROUTINE
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    CullBG Vb_BGColEven
+    M_CullBG Vb_BGColEven
 
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
@@ -267,7 +267,7 @@ Section1Bottom: SUBROUTINE
     sta PF1                 ; +3 
 
     ; bg color: even/odd or playfield
-    CullBG Vb_BGColOdd
+    M_CullBG Vb_BGColOdd
 
     lda #0                  ; +2    
     sta PF2                 ; +3 (18) 
