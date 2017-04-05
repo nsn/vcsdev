@@ -3,6 +3,14 @@
 ; 
 ;
 ; TODO
+; - standardize names:
+;   - RAM:
+;   - Macros:
+;   - 
+;   - 
+;   - 
+;   - 
+;   - 
 ; - last section (3) looks too large, 
 ;   maybe reduce to 12 scanlines instead of 16?
 ; - try to color the walls directly facing the player by setting PF registers
@@ -51,8 +59,8 @@ PFCOL = $0E
 
     ; "walks" a step in the direction defined by Player_Orientation
     ; basically just calls the WalkEast/South/West/North subroutine
-    ; pointed to by tmp4 and tmp5, then returns to {1}
-    ; expects tmp4 and tmp5 to point to the appropriate subroutine
+    ; pointed to by Vb_tmp4 and Vb_tmp5, then returns to {1}
+    ; expects Vb_tmp4 and Vb_tmp5 to point to the appropriate subroutine
     MAC CallWalkStepReturn
 
 .TARGET SET {1}
@@ -62,7 +70,7 @@ PFCOL = $0E
     lda #<(.TARGET-1)
     pha
     ; jump to walk* subroutine
-    jmp (tmp4)
+    jmp (Vb_tmp4)
 
     ENDM ;--- CallWalkStepReturn
 
@@ -88,13 +96,13 @@ PFCOL = $0E
     ENDM ;--- CullBG
 
     
-    ; load PosX/Y into tmp1/2
+    ; load PosX/Y into Vb_tmp1/2
     MAC CopyPos2Tmp
 
     lda Player_Pos_X
-    sta tmp1
+    sta Vb_tmp1
     lda Player_Pos_Y
-    sta tmp2
+    sta Vb_tmp2
 
     ENDM ;--- CopyPos2Tmp
 
@@ -108,12 +116,12 @@ PFCOL = $0E
     SEG.U variables
     ORG $80
 
-tmp1                ds 1
-tmp2                ds 1
-tmp3                ds 1
-tmp4                ds 1
-tmp5                ds 1
-tmp6                ds 1
+Vb_tmp1                ds 1
+Vb_tmp2                ds 1
+Vb_tmp3                ds 1
+Vb_tmp4                ds 1
+Vb_tmp5                ds 1
+Vb_tmp6                ds 1
 ; shadow registers
 SWCHA_Shadow        ds 1
 ; player data
@@ -152,6 +160,9 @@ Sec2_l_ptr       ds 2
 Sec2_r_ptr       ds 2
 Sec3_l_ptr       ds 2
 Sec3_r_ptr       ds 2
+; Wall states
+Wall_Left       ds 1
+Wall_Right      ds 1
 ; basically how far away is the far wall?
 CullDistance     ds 1
 ; BGColor value, 2 bytes
@@ -252,44 +263,44 @@ VerticalBlank:
 ;----------------------------
 ; test tile in maze
 ; input: 
-;   tmp1 - playerX
-;   tmp2 - playerY
+;   Vb_tmp1 - playerX
+;   Vb_tmp2 - playerY
 ; output:
 ;   Z flag - set if tile is solid, unset otherwise
 ; destroys:
 ;   X, Y
-;   tmp2, tmp3
+;   Vb_tmp2, Vb_tmp3
 ;----------------------------
 TestTile: SUBROUTINE
     ; get byte for left corridor walls
     ; - calculate quadrant offset (0-F)  
-    lda tmp1
+    lda Vb_tmp1
     lsr
     lsr
     lsr 
-    sta tmp3
-    lda tmp2
+    sta Vb_tmp3
+    lda Vb_tmp2
     lsr
     and #%11111100
     clc
-    adc tmp3
+    adc Vb_tmp3
     ; store quadrant offset in x
     tax
     ; load value of quadrant pointer into a
     lda Maze_a_a,x
 
     ; store it
-    sta tmp3
+    sta Vb_tmp3
     ; - add y offset
-    lda tmp2
+    lda Vb_tmp2
     and #%00000111
     clc
-    adc tmp3
+    adc Vb_tmp3
     ; store in x
     tax
     ; load maze value and
     ; shift so that Player_Pos_X is at lsb
-    lda tmp1
+    lda Vb_tmp1
     and #%00000111
     tay
     lda MAZEDATA_0,x
@@ -334,7 +345,7 @@ CheckDown: SUBROUTINE
     and Player_Orientation
     sta Player_Orientation
 
-    ; load PosX/Y into tmp1/2
+    ; load PosX/Y into Vb_tmp1/2
     CopyPos2Tmp
 
     lda SWCHA_Shadow
@@ -346,23 +357,23 @@ CheckDown: SUBROUTINE
     ; facing east?
     cmp #%00
     bne .notEast
-    dec tmp1
+    dec Vb_tmp1
     jmp CheckMovementValid
 .notEast
     ; facing south?
     cmp #%01
     bne .notSouth
-    dec tmp2
+    dec Vb_tmp2
     jmp CheckMovementValid
 .notSouth
     ; facing west?
     cmp #%10
     bne .notWest
-    inc tmp1
+    inc Vb_tmp1
     jmp CheckMovementValid
 .notWest
     ; facint north!
-    inc tmp2
+    inc Vb_tmp2
     jmp CheckMovementValid
 CheckUp: SUBROUTINE
     lda SWCHA_Shadow
@@ -374,32 +385,32 @@ CheckUp: SUBROUTINE
     ; facing east?
     cmp #%00
     bne .notEast
-    inc tmp1
+    inc Vb_tmp1
     jmp CheckMovementValid
 .notEast
     ; facing south?
     cmp #%01
     bne .notSouth
-    inc tmp2
+    inc Vb_tmp2
     jmp CheckMovementValid
 .notSouth
     ; facing west?
     cmp #%10
     bne .notWest
-    dec tmp1
+    dec Vb_tmp1
     jmp CheckMovementValid
 .notWest
     ; facint north!
-    dec tmp2
+    dec Vb_tmp2
 CheckMovementValid:
     ; test if move is valid
     jsr TestTile
     bne Collision
     ; TODO: implement collision sound
-    ; copy tmp1/2 back to PosX/Y
-    lda tmp1
+    ; copy Vb_tmp1/2 back to PosX/Y
+    lda Vb_tmp1
     sta Player_Pos_X
-    lda tmp2
+    lda Vb_tmp2
     sta Player_Pos_Y
     jmp NoMovement
 Collision:
@@ -423,7 +434,7 @@ NoMovement:
     SET_POINTER Sec3_l_ptr, PF_1_0 
     SET_POINTER Sec3_r_ptr, PF_1_0
 
-    ; set up tmp4 and tmp5 as pointer to the correct walking subrouting
+    ; set up Vb_tmp4 and Vb_tmp5 as pointer to the correct walking subrouting
     ; D0 of Player_Orientation: 0 -> E/W, 1 -> N,S
     ; D1 of Player_Orientation: 0 -> inc, 1-> dec
     ; 0 0  E
@@ -432,18 +443,23 @@ NoMovement:
     ; 1 1  N
     ; calc direction index and store in x
     ldx Player_Orientation
-    ; load appropriate subroutine location into tmp4 and tmp5
+    ; load appropriate subroutine location into Vb_tmp4 and Vb_tmp5
     lda WalkingTableHI,x
-    sta tmp5
+    sta Vb_tmp5
     lda WalkingTableLO,x
-    sta tmp4
+    sta Vb_tmp4
+
+    ; pseudo code:
+    ; 
+
+
 
     ; far wall
     ; calculate CullDistance
     ; reset
     lda #0
     sta CullDistance
-    ; set up tmp1 and tmp2
+    ; set up Vb_tmp1 and Vb_tmp2
     CopyPos2Tmp
 FarWall: SUBROUTINE
     CallWalkStepReturn FarWallRet
@@ -458,36 +474,41 @@ FarWallRet:
 .done
 
     ; left corridor wall
+    lda #$ff
+    sta Wall_Left
 LeftWall: SUBROUTINE
-    ; set up tmp1 and tmp2
+    ; set up Vb_tmp1 and Vb_tmp2
     CopyPos2Tmp
     ; modify according to Player_Orientation
     lda Player_Orientation
     ; facing east?
     cmp #%00
     bne .notEast
-    inc tmp2
+    inc Vb_tmp2
     jmp .LeftWallStep0
 .notEast
     ; facing south?
     cmp #%01
     bne .notSouth
-    dec tmp1
+    dec Vb_tmp1
     jmp .LeftWallStep0
 .notSouth
     ; facing west?
     cmp #%10
     bne .notWest
-    dec tmp2
+    dec Vb_tmp2
     jmp .LeftWallStep0
 .notWest
     ; facint north!
-    inc tmp1
+    inc Vb_tmp1
 .LeftWallStep0:
     ; test tile, set wall pointer accordingly
     jsr TestTile
     bne .solid0
     SET_POINTER Sec0_l_ptr, PF_NONE
+    ; clear d0 of LeftWall
+    lda #%11111110
+    sta Wall_Left
 .solid0
     ; walk one step formward
     CallWalkStepReturn LeftWallStep1
@@ -496,6 +517,10 @@ LeftWallStep1:
     jsr TestTile
     bne .solid1
     SET_POINTER Sec1_l_ptr, PF_NONE
+    ; clear d1 of LeftWall
+    lda Wall_Left
+    and #%11111101
+    sta Wall_Left
 .solid1
     ; walk one step formward
     CallWalkStepReturn LeftWallStep2
@@ -504,6 +529,10 @@ LeftWallStep2:
     jsr TestTile
     bne .solid2
     SET_POINTER Sec2_l_ptr, PF_NONE
+    ; clear d2 of LeftWall
+    lda Wall_Left
+    and #%11111011
+    sta Wall_Left
 .solid2
     ; walk one step formward
     CallWalkStepReturn LeftWallStep3
@@ -512,33 +541,37 @@ LeftWallStep3:
     jsr TestTile
     bne .solid3
     SET_POINTER Sec3_l_ptr, PF_NONE
+    ; clear d3 of LeftWall
+    lda Wall_Left
+    and #%11110111
+    sta Wall_Left 
 .solid3
     ; right corridor wall
 RightWall: SUBROUTINE
-    ; set up tmp1 and tmp2
+    ; set up Vb_tmp1 and Vb_tmp2
     CopyPos2Tmp
     ; modify according to Player_Orientation
     lda Player_Orientation
     ; facing east?
     cmp #%00
     bne .notEast
-    dec tmp2
+    dec Vb_tmp2
     jmp .RightWallStep0
 .notEast
     ; facing south?
     cmp #%01
     bne .notSouth
-    inc tmp1
+    inc Vb_tmp1
     jmp .RightWallStep0
 .notSouth
     ; facing west?
     cmp #%10
     bne .notWest
-    inc tmp2
+    inc Vb_tmp2
     jmp .RightWallStep0
 .notWest
     ; facint north!
-    dec tmp1
+    dec Vb_tmp1
 .RightWallStep0:
     ; test tile, set wall pointer accordingly
     jsr TestTile
@@ -602,324 +635,7 @@ DrawScreen:
     bne DrawScreen
     sta VBLANK ; since A = #0
 
-
-    ; Y will be our scanline counter
-    ; --- ##########################
-    ; 16 Scanlines of Section0Top
-Section0Top: SUBROUTINE
-    ldy #15
-.lineLoop
-    sta WSYNC
-    ; bg color
-    lda BGCol_even
-    sta COLUBK
-    lda (Sec0_l_ptr),y   ; +5
-    sta PF0                 ; +3 
-    lda #0                  ; +2    
-    sta PF1                 ; +3 
-    sta PF2                 ; +3 (18) 
-    ; wait for PF0 to finish drawing
-    SLEEP 16
-
-    lda #0                  ;    
-    sta PF0                 ; +3 (8)
-    sta PF1                 ; +3 (8)
-    ; wait for P23 to finish drawing
-    SLEEP 6
-    lda (Sec0_r_ptr),y
-    and #%11110000
-    sta PF2
-    dey
-    bpl .lineLoop
-
-    ; --- ##########################
-    ; 16 Scanlines of Section1Top
-Section1Top: SUBROUTINE
-    ldy #15
-.lineLoop
-    ; prepare CullDistance comparison for later
-    ldx #1                  ; +2
-    ; prepare PF0 value
-    lda #%11110000
-
-    sta WSYNC
-
-    sta PF0
-    ; set up PF1
-    lda (Sec1_l_ptr),y      ; +5
-    and #%11110000          ; +2
-    sta PF1                 ; +3 
-
-    ; use PF0 and first half of PF1 to set 
-    ; bg color: even/odd or playfield
-    CullBG BGCol_odd
-
-    lda #0                  ; +2    
-    sta PF2                 ; +3 (18) 
-
-    ; wait for PF2 to finish drawing
-    SLEEP 8
-
-    ; A still is #0
-    sta PF0                 ; +3 (8)
-    sta PF1                 ; +3 (8)
-    lda (Sec1_r_ptr),y
-    ora #%11110000
-    sta PF2
-
-    dey
-    bpl .lineLoop
-
-    ; --- ##########################
-    ; 16 Scanlines of Section2Top
-Section2Top: SUBROUTINE
-    ldy #15
-.lineLoop
-    ; prepare CullDistance comparison for later
-    ldx #2                  ; +2
-    lda #%11110000
-    sta WSYNC
-
-    sta PF0
-    lda (Sec2_l_ptr),y   ; +5
-    ora #%11110000          ; +2
-    sta PF1                 ; +3 
-
-    ; bg color: even/odd or playfield
-    CullBG BGCol_even
-
-    lda #0                  ; +2    
-    sta PF2                 ; +3 (18) 
-
-    ; wait for PF1 to finish drawing
-    SLEEP 4
-
-    lda #0                  ;    
-    sta PF0                 ; +3 (8)
-    lda (Sec2_r_ptr),y
-    and #%00001111
-    sta PF1                 ; +3 (8)
-    lda #%11111111
-    sta PF2
-
-    dey
-    bpl .lineLoop
-
-    ; --- ##########################
-    ; 16 Scanlines of Section3Top
-Section3Top: SUBROUTINE
-    ldy #15
-.lineLoop
-    ; ScanCycle 64 - 8 cycles left...
-    ; prepare CullDistance comparison for later
-    ldx #3                  ; +2
-    lda #%11111111
-    ; out of cycles - need to strobe WSYNC
-    sta WSYNC
-    ; PF0, Pf1 are solid
-    sta PF0
-    sta PF1                 ; +3 
-
-    ; bg color: even/odd or playfield
-    CullBG BGCol_odd
-    
-    lda (Sec3_l_ptr),y   ; +5
-    and #%00001111          ; +2
-    sta PF2                 ; +3 (18) 
-
-    ; wait for PF1 to finish drawing
-    SLEEP 4
-
-    lda #0                  ;    
-    sta PF0                 ; +3 (8)
-    lda (Sec3_r_ptr),y
-    ora #%00001111
-    sta PF1                 ; +3 (8)
-    lda #%11111111
-    sta PF2
-
-    dey
-    bpl .lineLoop
-
-
-    ; --- ##########################
-    ; 32 Scanlines of far end of tunnel
-FarEnd: SUBROUTINE
-    ldy #31
-.lineLoop
-    ; ScanCycle 62 - 10 cycles left for checks
-    ; load player gfx
-    ldx SKELETON_P0,y
-    stx GRP0
-    ; test if far wall should be solid or BG
-    lda #4              ; +2
-    ; we only used 5 cycles, but WSYNC takes 3...
-    sta WSYNC
-    ; now we have ~22 cycles to set bgcol and PF0 
-    cmp CullDistance    ; +3 (5)
-    bcc .nocull         ; +2/3 
-    lda #PFCOL          ; +2 (5)
-    jmp .setbg
-.nocull
-    lda #BGCOL_FAR      ; +2 (4)
-    nop                 ; +2 (7) nop to equalize branch cycles
-.setbg    
-
-    ; bg color 
-    sta COLUBK          
-
-    lda #$ff
-    sta PF0
-    sta PF1
-    lda #%00001111
-    sta PF2
-
-    ; wait for PF1 to finish
-    sta RESP0
-    SLEEP 12
-
-    sta PF0
-    lda #$ff
-    sta PF1
-    sta PF2
-
-    dey
-    bpl .lineLoop
-
-    ; --- ##########################
-    ; 16 Scanlines of Section3Bottom
-Section3Bottom: SUBROUTINE
-    ldy #0
-.lineLoop
-    ; prepare CullDistance comparison for later
-    ldx #3                  ; +2
-    lda #%11111111
-    ; plenty of cycles left, end line - need to strobe WSYNC
-    sta WSYNC
-    sta PF0
-    sta PF1                 ; +3 
-
-    ; bg color: even/odd or playfield
-    CullBG BGCol_odd
-
-    lda (Sec3_l_ptr),y   ; +5
-    and #%00001111          ; +2
-    sta PF2                 ; +3 (18) 
-
-    ; wait for PF1 to finish drawing
-    SLEEP 4
-
-    lda #0                  ;    
-    sta PF0                 ; +3 (8)
-    lda (Sec3_r_ptr),y
-    ora #%00001111
-    sta PF1                 ; +3 (8)
-    lda #%11111111
-    sta PF2
-
-    iny
-    cpy #16
-    bne .lineLoop
-
-    ; --- ##########################
-    ; 16 Scanlines of Section2Bottom
-Section2Bottom: SUBROUTINE
-    ldy #0
-.lineLoop
-    ; prepare CullDistance comparison for later
-    ldx #2                  ; +2
-    lda #%11110000
-    sta WSYNC
-
-    sta PF0
-    lda (Sec2_l_ptr),y   ; +5
-    ora #%11110000          ; +2
-    sta PF1                 ; +3 
-
-    ; bg color: even/odd or playfield
-    CullBG BGCol_even
-
-    lda #0                  ; +2    
-    sta PF2                 ; +3 (18) 
-
-    ; wait for PF1 to finish drawing
-    SLEEP 4
-
-    lda #0                  ;    
-    sta PF0                 ; +3 (8)
-    lda (Sec2_r_ptr),y
-    and #%00001111
-    sta PF1                 ; +3 (8)
-    lda #%11111111
-    sta PF2
-
-    iny
-    cpy #16
-    bne .lineLoop
-
-    ; --- ##########################
-    ; 16 Scanlines of Section1Bottom
-Section1Bottom: SUBROUTINE
-    ldy #0
-.lineLoop
-    ; prepare CullDistance comparison for later
-    ldx #1                  ; +2
-    lda #%11110000
-    sta WSYNC
-    sta PF0
-    lda (Sec1_l_ptr),y   ; +5
-    and #%11110000          ; +2
-    sta PF1                 ; +3 
-
-    ; bg color: even/odd or playfield
-    CullBG BGCol_odd
-
-    lda #0                  ; +2    
-    sta PF2                 ; +3 (18) 
-
-    ; wait for PF1 to finish drawing
-    SLEEP 4 
-
-    lda #0                  ;    
-    sta PF0                 ; +3 (8)
-    sta PF1                 ; +3 (8)
-    lda (Sec1_r_ptr),y
-    ora #%11110000
-    sta PF2
-
-    iny
-    cpy #16
-    bne .lineLoop
-
-
-    ; --- ##########################
-    ; 16 Scanlines of Section0Bottom
-Section0Bottom: SUBROUTINE
-    ldy #0
-.lineLoop
-    sta WSYNC
-    ; bg color
-    lda BGCol_even
-    sta COLUBK
-    lda (Sec0_l_ptr),y   ; +5
-    sta PF0                 ; +3 
-    lda #0                  ; +2    
-    sta PF1                 ; +3 
-    sta PF2                 ; +3 (18) 
-    ; wait for PF0 to finish drawing
-    SLEEP 16
-    lda #0                  ;    
-    sta PF0                 ; +3 (8)
-    sta PF1                 ; +3 (8)
-    ; wait for P23 to finish drawing
-    SLEEP 8
-    lda (Sec0_r_ptr),y
-    and #%11110000
-    sta PF2
-
-    iny
-    cpy #16
-    bne .lineLoop
+    include "tunnelkernel.inc"
 
 
     ; clear registers to prevent bleeding
@@ -955,18 +671,18 @@ OverScanLineWait:
 ;----------------------------
 ; Walking subroutines
 ;----------------------------
-; inc/dec tmp1 (== XCoord) or tmp2 (==YCoord)
+; inc/dec Vb_tmp1 (== XCoord) or Vb_tmp2 (==YCoord)
 WalkNorth: SUBROUTINE
-    dec tmp2
+    dec Vb_tmp2
     rts
 WalkEast: SUBROUTINE
-    inc tmp1
+    inc Vb_tmp1
     rts
 WalkSouth: SUBROUTINE
-    inc tmp2
+    inc Vb_tmp2
     rts
 WalkWest: SUBROUTINE
-    dec tmp1
+    dec Vb_tmp1
     rts
 
 ;----------------------------
