@@ -75,6 +75,32 @@ PFCOL = $0E
     ENDM ;--- M_CallWalkStepReturn
 
 
+    ; movement macros
+    ; calls appropriate Move* subroutines 
+    ; destroys 
+    ; x
+    ; Vb_tmp4 and 5
+    MAC M_Move
+
+.RETURNTARGET SET {2}
+    ; push return target address to stack
+    lda #>(.RETURNTARGET-1)
+    pha
+    lda #<(.RETURNTARGET-1)
+    pha
+
+    ; load tmp4 and tmp5
+    ldx Vb_PlayerOrientation
+    lda MovePtrHI,x
+    sta Vb_tmp5
+    lda MoveForwardPtrLOTable,x
+    sta Vb_tmp4
+    ; execute jump
+    jmp (Vb_tmp4)
+
+    ENDM ;--- M_Move
+
+
     ; sets COLUBK to {1} or PFCOL
     ; depending on X < / >= Vb_DrawDist
     ; expects X to contain the section's draw distance
@@ -324,7 +350,8 @@ GameState:
     lda SWCHA
     ; break if nothing has changed
     cmp Vb_SWCHA_Shadow
-    beq NoMovement
+    ;beq NoMovement
+    beq TMPNOMOV
     ; store new SWCHA state
     sta Vb_SWCHA_Shadow
     ; Player orientation, 
@@ -376,10 +403,18 @@ CheckDown: SUBROUTINE
     ; facint north!
     inc Vb_tmp2
     jmp CheckMovementValid
+
+TMPNOMOV:
+    jmp NoMovement
+
 CheckUp: SUBROUTINE
     lda Vb_SWCHA_Shadow
     and #%00010000
     bne NoMovement
+    M_Move Forward,TESTIT
+TESTIT:
+    jmp CheckMovementValid
+    jmp NoMovement
     ; Up pressed!
     ; modify Player Pos according to Vb_PlayerOrientation
     lda Vb_PlayerOrientation
@@ -698,7 +733,7 @@ MovePtrHI:
     .byte >(MoveNorth)
     ; low bytes, index /w Vb_PlayerOrientation
     ; forward
-MoveFwdPtrLOTable:
+MoveForwardPtrLOTable:
     .byte <(MoveEast)   ; 00 -> facing east
     .byte <(MoveSouth)  ; 01 -> facing south
     .byte <(MoveWest)   ; 10 -> facing west
