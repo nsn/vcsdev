@@ -91,9 +91,9 @@ PFCOL = $0E
 
     ; load tmp4 and tmp5
     ldx Vb_PlayerOrientation
-    lda MovePtrHI,x
+    lda MovePtrHI
     sta Vb_tmp5
-    lda MoveForwardPtrLOTable,x
+    lda Move{1}PtrLOTable,x
     sta Vb_tmp4
     ; execute jump
     jmp (Vb_tmp4)
