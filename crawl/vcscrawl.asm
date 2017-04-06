@@ -351,7 +351,7 @@ GameState:
     ; break if nothing has changed
     cmp Vb_SWCHA_Shadow
     ; beq NoMovement
-    beq TMPNOMOV
+    beq NoMovement
     ; store new SWCHA state
     sta Vb_SWCHA_Shadow
 
@@ -365,13 +365,13 @@ CheckRight:
 CheckLeft:
     lda Vb_SWCHA_Shadow
     and #%01000000
-    ; skip to CheckDown if not equal
-    bne CheckDown
+    ; skip to Check4Movement if not equal
+    bne Check4Movement
     inc Vb_PlayerOrientation
 
     ; Player Position
     ; joystick up/down
-CheckDown: SUBROUTINE
+Check4Movement:
     ; preparations:
     ; normalize Vb_PlayerOrientation
     lda #%00000011
@@ -379,6 +379,8 @@ CheckDown: SUBROUTINE
     sta Vb_PlayerOrientation
     ; load PosX/Y into Vb_tmp1/2
     M_CopyPos2Tmp
+    ; check if down was pressed
+CheckDown: SUBROUTINE
     
     ; check if down is pressed
     lda Vb_SWCHA_Shadow
@@ -387,9 +389,6 @@ CheckDown: SUBROUTINE
     bne CheckUp
     ; move back one step, check if valid movement
     M_Move Back,CheckMovementValid
-
-TMPNOMOV:
-    jmp NoMovement
 
 CheckUp: SUBROUTINE
     ; check if up is pressed
