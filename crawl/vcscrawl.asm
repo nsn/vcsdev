@@ -387,30 +387,6 @@ CheckDown: SUBROUTINE
     bne CheckUp
     ; move back one step, check if valid movement
     M_Move Back,CheckMovementValid
-    ; down pressed!
-    ; modify Player Pos according to Vb_PlayerOrientation
-    lda Vb_PlayerOrientation
-    ; facing east?
-    cmp #%00
-    bne .notEast
-    dec Vb_tmp1
-    jmp CheckMovementValid
-.notEast
-    ; facing south?
-    cmp #%01
-    bne .notSouth
-    dec Vb_tmp2
-    jmp CheckMovementValid
-.notSouth
-    ; facing west?
-    cmp #%10
-    bne .notWest
-    inc Vb_tmp1
-    jmp CheckMovementValid
-.notWest
-    ; facint north!
-    inc Vb_tmp2
-    jmp CheckMovementValid
 
 TMPNOMOV:
     jmp NoMovement
