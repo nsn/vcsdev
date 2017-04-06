@@ -58,7 +58,7 @@ PFCOL = $0E
 ;----------------------------
 
     ; "walks" a step in the direction defined by Vb_PlayerOrientation
-    ; basically just calls the WalkEast/South/West/North subroutine
+    ; basically just calls the MoveEast/South/West/North subroutine
     ; pointed to by Vb_tmp4 and Vb_tmp5, then returns to {1}
     ; expects Vb_tmp4 and Vb_tmp5 to point to the appropriate subroutine
     MAC M_CallWalkStepReturn
@@ -174,6 +174,7 @@ Vb_BGColEven          ds 1
 
     SEG code
     ORG $F000
+    echo "---- start code at ",(*)
 Reset:
 ;----------------------------
 ; Start of program
@@ -269,7 +270,7 @@ VerticalBlank:
 ;   Z flag - set if tile is solid, unset otherwise
 ; destroys:
 ;   X, Y
-;   Vb_tmp2, Vb_tmp3
+;   Vb_tmp3
 ;----------------------------
 TestTile: SUBROUTINE
     ; get byte for left corridor walls
@@ -450,7 +451,7 @@ NoMovement:
     sta Vb_tmp4
 
     ; pseudo code:
-    ; 
+    
 
 
 
@@ -672,43 +673,79 @@ OverScanLineWait:
 ; Walking subroutines
 ;----------------------------
 ; inc/dec Vb_tmp1 (== XCoord) or Vb_tmp2 (==YCoord)
-WalkNorth: SUBROUTINE
+MoveNorth: SUBROUTINE
     dec Vb_tmp2
     rts
-WalkEast: SUBROUTINE
+MoveEast: SUBROUTINE
     inc Vb_tmp1
     rts
-WalkSouth: SUBROUTINE
+MoveSouth: SUBROUTINE
     inc Vb_tmp2
     rts
-WalkWest: SUBROUTINE
+MoveWest: SUBROUTINE
     dec Vb_tmp1
     rts
 
 ;----------------------------
 ; Data
 ;----------------------------
+
+    echo "---- start data at ",(*)
+
+    ; movement soubroutine pointer table
+    ; all Move* subroutines pointers share a single HI byte
+MovePtrHI:
+    .byte >(MoveNorth)
+    ; low bytes, index /w Vb_PlayerOrientation
+    ; forward
+MoveFwdPtrLOTable:
+    .byte <(MoveEast)   ; 00 -> facing east
+    .byte <(MoveSouth)  ; 01 -> facing south
+    .byte <(MoveWest)   ; 10 -> facing west
+    .byte <(MoveNorth)  ; 11 -> facing north
+    ; back
+MoveBackPtrLOTable:
+    .byte <(MoveWest)   ; 00 -> facing east
+    .byte <(MoveNorth)  ; 01 -> facing south
+    .byte <(MoveEast)   ; 10 -> facing west
+    .byte <(MoveSouth)  ; 11 -> facing north
+    ; left
+MoveLeftPtrLOTable:
+    .byte <(MoveNorth)   ; 00 -> facing east
+    .byte <(MoveEast)    ; 01 -> facing south
+    .byte <(MoveSouth)   ; 10 -> facing west
+    .byte <(MoveWest)    ; 11 -> facing north
+    ; right
+MoveRightPtrLOTable:
+    .byte <(MoveSouth)   ; 00 -> facing east
+    .byte <(MoveWest)    ; 01 -> facing south
+    .byte <(MoveNorth)   ; 10 -> facing west
+    .byte <(MoveEast)    ; 11 -> facing north
+
+
     ; walk subroutine pointer table
 WalkingTableHI:
-    .byte >(WalkEast)
-    .byte >(WalkSouth)
-    .byte >(WalkWest)
-    .byte >(WalkNorth)
+    .byte >(MoveEast)
+    .byte >(MoveSouth)
+    .byte >(MoveWest)
+    .byte >(MoveNorth)
 
 WalkingTableLO:
-    .byte <(WalkEast)
-    .byte <(WalkSouth)
-    .byte <(WalkWest)
-    .byte <(WalkNorth)
+    .byte <(MoveEast)
+    .byte <(MoveSouth)
+    .byte <(MoveWest)
+    .byte <(MoveNorth)
 
     ; playfield data
     include "pfdata.inc"
     ; sprites
     include "mobdata.inc"
+
+    echo "---- bytes left ",($fd00 - *)
+
     ; maze data needs to be page aligned...
     ORG $FD00
     include "mazedata.inc"
-
 
 ;----------------------------
 ; Reset/Break 
