@@ -411,33 +411,8 @@ CheckUp: SUBROUTINE
     lda Vb_SWCHA_Shadow
     and #%00010000
     bne NoMovement
-    M_Move Forward,TESTIT
-TESTIT:
-    jmp CheckMovementValid
-    jmp NoMovement
-    ; Up pressed!
-    ; modify Player Pos according to Vb_PlayerOrientation
-    lda Vb_PlayerOrientation
-    ; facing east?
-    cmp #%00
-    bne .notEast
-    inc Vb_tmp1
-    jmp CheckMovementValid
-.notEast
-    ; facing south?
-    cmp #%01
-    bne .notSouth
-    inc Vb_tmp2
-    jmp CheckMovementValid
-.notSouth
-    ; facing west?
-    cmp #%10
-    bne .notWest
-    dec Vb_tmp1
-    jmp CheckMovementValid
-.notWest
-    ; facint north!
-    dec Vb_tmp2
+    M_Move Forward,CheckMovementValid
+
 CheckMovementValid:
     ; test if move is valid
     jsr TestTile
