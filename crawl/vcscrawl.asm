@@ -380,11 +380,13 @@ CheckDown: SUBROUTINE
     ; load PosX/Y into Vb_tmp1/2
     M_CopyPos2Tmp
     
-    ; check if down 
+    ; check if down is pressed
     lda Vb_SWCHA_Shadow
     and #%00100000
+    ; skip to CheckUp if not pressed
     bne CheckUp
-    ;M_Move Back,CheckMovementValid
+    ; move back one step, check if valid movement
+    M_Move Back,CheckMovementValid
     ; down pressed!
     ; modify Player Pos according to Vb_PlayerOrientation
     lda Vb_PlayerOrientation
@@ -414,10 +416,12 @@ TMPNOMOV:
     jmp NoMovement
 
 CheckUp: SUBROUTINE
-    ; check if up
+    ; check if up is pressed
     lda Vb_SWCHA_Shadow
     and #%00010000
+    ; skip to NoMovement if not pressed
     bne NoMovement
+    ; move forward one step, check if valid movement
     M_Move Forward,CheckMovementValid
 
 CheckMovementValid:
