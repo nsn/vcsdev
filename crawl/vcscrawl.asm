@@ -3,14 +3,7 @@
 ; 
 ;
 ; TODO
-; - standardize names:
-;   - RAM:
-;   - Macros:
-;   - 
-;   - 
-;   - 
-;   - 
-;   - 
+; - enable Joy1 inputs as well as Joy0
 ; - last section (3) looks too large, 
 ;   maybe reduce to 12 scanlines instead of 16?
 ; - try to color the walls directly facing the player by setting PF registers
@@ -355,22 +348,27 @@ GameState:
     ; store new SWCHA state
     sta Vb_SWCHA_Shadow
 
-    ; Player orientation, 
-    ; joystick left/right
-CheckRight:
+; Player orientation, 
+; joystick left/right
+Check4Turn:
+
+; turn right?
+CheckRightPressed:
     and #%10000000
-    ; skip to CheckLeft if not equal
-    bne CheckLeft
+    ; skip to CheckLeftPressed if not equal
+    bne CheckLeftPressed
     dec Vb_PlayerOrientation
-CheckLeft:
+
+; turn left?
+CheckLeftPressed:
     lda Vb_SWCHA_Shadow
     and #%01000000
     ; skip to Check4Movement if not equal
     bne Check4Movement
     inc Vb_PlayerOrientation
 
-    ; Player Position
-    ; joystick up/down
+; Player Position
+; joystick up/down
 Check4Movement:
     ; preparations:
     ; normalize Vb_PlayerOrientation
@@ -379,18 +377,19 @@ Check4Movement:
     sta Vb_PlayerOrientation
     ; load PosX/Y into Vb_tmp1/2
     M_CopyPos2Tmp
-    ; check if down was pressed
-CheckDown: SUBROUTINE
-    
+
+; check if down was pressed
+CheckDownPressed: SUBROUTINE
     ; check if down is pressed
     lda Vb_SWCHA_Shadow
     and #%00100000
-    ; skip to CheckUp if not pressed
-    bne CheckUp
+    ; skip to CheckUpPressed if not pressed
+    bne CheckUpPressed
     ; move back one step, check if valid movement
     M_Move Back,CheckMovementValid
 
-CheckUp: SUBROUTINE
+; check if up was pressed
+CheckUpPressed: SUBROUTINE
     ; check if up is pressed
     lda Vb_SWCHA_Shadow
     and #%00010000
