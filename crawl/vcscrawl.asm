@@ -3,13 +3,14 @@
 ; 
 ;
 ; TODO
-; - enable Joy1 inputs as well as Joy0
+; - support Joy1 inputs as well as Joy0
 ; - last section (3) looks too large, 
 ;   maybe reduce to 12 scanlines instead of 16?
 ; - try to color the walls directly facing the player by setting PF registers
 ;   to #%00000000 and using a designated bgcol
 ;
 ; Loads of room for optimizations:
+; - optimize M_Move to not need a return label (maybe abuse DASM's '*')?
 ; - only update wall pointers and Vb_DrawDist after movement actually happened
 ; - culling tests
 ;   these decide whether to use the current odd/even color or use
@@ -43,6 +44,8 @@ BGCOL_DARK = $E4
 BGCOL_LIGHT = $E8
 BGCOL_FAR = $00
 PFCOL = $0E
+
+C_MAX_DRAW_DIST = 5
 
 ;--- end Constants
 
@@ -180,10 +183,10 @@ Vptr_Sec2R       ds 2
 Vptr_Sec3L       ds 2
 Vptr_Sec3R       ds 2
 ; Wall states
-Vb_LeftWall       ds 1
-Vb_RightWall      ds 1
+Vb_LeftWall      ds 1
+Vb_RightWall     ds 1
 ; basically how far to the end of the tunnel?
-Vb_DrawDist     ds 1
+Vb_DrawDist      ds 1
 ; BGColor value, 2 bytes
 Vb_BGColOdd           ds 1
 Vb_BGColEven          ds 1
@@ -223,9 +226,12 @@ InitMaze:
     cpx #16
     bne InitMaze
 ; init player pos
-    lda #1
+    lda #2
     sta Vb_PlayerPosX 
+    lda #2
     sta Vb_PlayerPosY
+    lda #0
+    sta Vb_PlayerOrientation
 
 ; set TIA behaviour
     ; set bg color to black ($0)
@@ -414,10 +420,90 @@ Collision:
 NoMovement:
 
 
+; calculate wall and tunnel states
+;
+; tmp4,5 = player_pos
+; for (i=0; i<C_MAX_DRAW_DIST; i++) {
+;   move left
+;   check tile
+;   save state left
+;   move right (to middle)
+;   check tile
+;   inc draw dist if not solid
+;
+; }
+CalcTunnelState: SUBROUTINE
+    ; initialize variables
+    M_CopyPos2Tmp
+    lda #0
+    sta Vb_LeftWall
+    sta Vb_RightWall
+    sta Vb_DrawDist
+    ; loop C_MAX_DRAW_DIST times
+    ; use Vb_tmp6 as loop counter
+    sta Vb_tmp6
+.DrawDistLoop:    
+    ; we start at the left tile
+    M_Move Left,CTS_LeftTile
+CTS_LeftTile:
+    jsr TestTile
+    ; after TestTile: Z == A = 1 if solid
+    ; store tile state in tmp5
+    sta Vb_tmp5 
+    ; load LeftWall state
+    lda Vb_LeftWall
+    ; shift left
+    clc
+    asl
+    ; set lsb
+    ora Vb_tmp5
+    ; store new sate
+    sta Vb_LeftWall
+    ; move right -> center tile
+    M_Move Right,CTS_CenterTile
+CTS_CenterTile:
+    ; move right to center
+
+    ; move right -> right tile
+    M_Move Right,CTS_RightTile
+CTS_RightTile:
+    jsr TestTile
+    ; after TestTile: Z == A = 1 if solid
+    ; store tile state in tmp5
+    sta Vb_tmp5 
+    ; load LeftWall state
+    lda Vb_RightWall
+    ; shift left
+    clc
+    asl
+    ; set lsb
+    ora Vb_tmp5
+    ; store new sate
+    sta Vb_RightWall
+    
+    ; move one step forward and reset to center tile
+    ; happens at the end of the loop b/c we also need to check
+    ; current position's tile state
+    ; move forward
+    M_Move Forward,CTS_MoveToCenter
+    ; move Left, back to center
+CTS_MoveToCenter
+    M_Move Left,CTS_LoopCheck
+
+    ; break loop?
+CTS_LoopCheck:
+    lda #C_MAX_DRAW_DIST
+    inc Vb_tmp6
+    cmp Vb_tmp6
+    beq .breakLoop
+    jmp .DrawDistLoop
+.breakLoop:
+BREAKHERE:
+
+
     ; set playfield data pointers 
     ; according to position in maze
     ; first: set all to solid
-
     SET_POINTER Vptr_Sec0L, PF_1_0 
     SET_POINTER Vptr_Sec0R, PF_1_1
 
@@ -445,11 +531,6 @@ NoMovement:
     lda WalkingTableLO,x
     sta Vb_tmp4
 
-    ; pseudo code:
-    
-
-
-
     ; far wall
     ; calculate Vb_DrawDist
     ; reset
@@ -469,9 +550,6 @@ FarWallRet:
     beq FarWall
 .done
 
-    ; left corridor wall
-    lda #$ff
-    sta Vb_LeftWall
 LeftWall: SUBROUTINE
     ; set up Vb_tmp1 and Vb_tmp2
     M_CopyPos2Tmp
@@ -502,9 +580,6 @@ LeftWall: SUBROUTINE
     jsr TestTile
     bne .solid0
     SET_POINTER Vptr_Sec0L, PF_NONE
-    ; clear d0 of LeftWall
-    lda #%11111110
-    sta Vb_LeftWall
 .solid0
     ; walk one step formward
     M_CallWalkStepReturn LeftWallStep1
@@ -513,10 +588,6 @@ LeftWallStep1:
     jsr TestTile
     bne .solid1
     SET_POINTER Vptr_Sec1L, PF_NONE
-    ; clear d1 of LeftWall
-    lda Vb_LeftWall
-    and #%11111101
-    sta Vb_LeftWall
 .solid1
     ; walk one step formward
     M_CallWalkStepReturn LeftWallStep2
@@ -525,10 +596,6 @@ LeftWallStep2:
     jsr TestTile
     bne .solid2
     SET_POINTER Vptr_Sec2L, PF_NONE
-    ; clear d2 of LeftWall
-    lda Vb_LeftWall
-    and #%11111011
-    sta Vb_LeftWall
 .solid2
     ; walk one step formward
     M_CallWalkStepReturn LeftWallStep3
@@ -537,10 +604,6 @@ LeftWallStep3:
     jsr TestTile
     bne .solid3
     SET_POINTER Vptr_Sec3L, PF_NONE
-    ; clear d3 of LeftWall
-    lda Vb_LeftWall
-    and #%11110111
-    sta Vb_LeftWall 
 .solid3
     ; right corridor wall
 RightWall: SUBROUTINE
