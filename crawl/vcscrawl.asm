@@ -226,11 +226,11 @@ InitMaze:
     cpx #16
     bne InitMaze
 ; init player pos
-    lda #2
+    lda #3
     sta Vb_PlayerPosX 
-    lda #2
+    lda #6
     sta Vb_PlayerPosY
-    lda #0
+    lda #3
     sta Vb_PlayerOrientation
 
 ; set TIA behaviour
@@ -439,13 +439,18 @@ CalcTunnelState: SUBROUTINE
     sta Vb_LeftWall
     sta Vb_RightWall
     sta Vb_DrawDist
+    lda #C_MAX_DRAW_DIST
     ; loop C_MAX_DRAW_DIST times
     ; use Vb_tmp6 as loop counter
+    ; for (tmp6 = C_MAX_DRAW_DIST; tmp6 > 0; tmp6--) {
+    ; ...
+    ; }
     sta Vb_tmp6
 .DrawDistLoop:    
     ; we start at the left tile
     M_Move Left,CTS_LeftTile
 CTS_LeftTile:
+    ; TODO: create CTS_TestAndShift,[Left,Right] Macro
     jsr TestTile
     ; after TestTile: Z == A = 1 if solid
     ; store tile state in tmp5
@@ -462,8 +467,18 @@ CTS_LeftTile:
     ; move right -> center tile
     M_Move Right,CTS_CenterTile
 CTS_CenterTile:
-    ; move right to center
-
+    jsr TestTile
+DEBUG1:
+    ; not solid - don't care
+    beq .drawDistAlreadySet
+    lda Vb_DrawDist
+    ; DrawDist already set, don't overwrite
+    bne .drawDistAlreadySet
+    ; solid tile && DrawDist == 0
+    ;    -> DrawDist := loop variable's value
+    lda Vb_tmp6
+    sta Vb_DrawDist
+.drawDistAlreadySet
     ; move right -> right tile
     M_Move Right,CTS_RightTile
 CTS_RightTile:
@@ -492,14 +507,36 @@ CTS_MoveToCenter
 
     ; break loop?
 CTS_LoopCheck:
-    lda #C_MAX_DRAW_DIST
-    inc Vb_tmp6
-    cmp Vb_tmp6
+    dec Vb_tmp6
+    ; bne .DrawDistLoop is too far a jump...
     beq .breakLoop
     jmp .DrawDistLoop
 .breakLoop:
-BREAKHERE:
 
+DEBUG2:
+    ; "normalize" tunnel state vars
+    lda Vb_DrawDist
+    beq .drawDistZero
+    ; DrawDist := MAX - DrawDist
+    lda #C_MAX_DRAW_DIST
+    sec
+    sbc Vb_DrawDist
+    sta Vb_DrawDist
+.drawDistZero:
+    ; DrawDist cannot be 0, so we assume MAX then
+    lda #C_MAX_DRAW_DIST
+    sta Vb_DrawDist
+    ; we don't care about the farthest tile as it's out of sight
+    ; so we shift the state vars left
+.finalizeLeftWall:
+    lda Vb_LeftWall
+    lsr
+    sta Vb_LeftWall
+    lda Vb_RightWall
+    lsr
+    sta Vb_RightWall
+
+BREAKHERE:
 
     ; set playfield data pointers 
     ; according to position in maze
