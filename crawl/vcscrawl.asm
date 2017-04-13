@@ -522,6 +522,7 @@ DEBUG2:
     sec
     sbc Vb_DrawDist
     sta Vb_DrawDist
+    jmp .finalizeLeftWall
 .drawDistZero:
     ; DrawDist cannot be 0, so we assume MAX then
     lda #C_MAX_DRAW_DIST
@@ -568,24 +569,25 @@ BREAKHERE:
     lda WalkingTableLO,x
     sta Vb_tmp4
 
-    ; far wall
-    ; calculate Vb_DrawDist
-    ; reset
-    lda #0
-    sta Vb_DrawDist
-    ; set up Vb_tmp1 and Vb_tmp2
-    M_CopyPos2Tmp
-FarWall: SUBROUTINE
-    M_CallWalkStepReturn FarWallRet
-FarWallRet:
-    inc Vb_DrawDist
-    beq .done
-    lda #5
-    cmp Vb_DrawDist
-    bcc .done
-    jsr TestTile
-    beq FarWall
-.done
+;    ; far wall
+;    ; calculate Vb_DrawDist
+;    ; reset
+;    lda #0
+;    sta Vb_DrawDist
+;    ; set up Vb_tmp1 and Vb_tmp2
+;    M_CopyPos2Tmp
+;FarWall: SUBROUTINE
+;    M_CallWalkStepReturn FarWallRet
+;FarWallRet:
+;    inc Vb_DrawDist
+;    beq .done
+;    lda #5
+;    cmp Vb_DrawDist
+;    bcc .done
+;    jsr TestTile
+;    beq FarWall
+;.done
+DEBUG3:
 
 LeftWall: SUBROUTINE
     ; set up Vb_tmp1 and Vb_tmp2
