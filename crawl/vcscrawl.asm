@@ -128,6 +128,29 @@ C_MAX_DRAW_DIST = 5
 
     ENDM ;--- M_CopyPos2Tmp
 
+    ; calls TestTile, then combines result
+    ; /w {1} and shifts left
+    ; uses Vb_tmp5 to temporarily store test result
+    ; expects test coords to be stored in tmp1/tmp2
+    ; param {1} target wall state variable
+    MAC M_CTS_TestAndShift
+    ; test if tile is solid
+    jsr TestTile
+    ; after TestTile: Z == A = 1 if solid
+    ; store tile state in tmp5
+    sta Vb_tmp5 
+    ; load wall state
+    lda {1}
+    ; shift left
+    clc
+    asl
+    ; set lsb
+    ora Vb_tmp5
+    ; store new sate
+    sta {1}
+
+    ENDM ;--- M_CTS_TestAndShift
+
 ;############################
 ; Bank1
 ;############################
@@ -450,25 +473,12 @@ CalcTunnelState: SUBROUTINE
     ; we start at the left tile
     M_Move Left,CTS_LeftTile
 CTS_LeftTile:
-    ; TODO: create CTS_TestAndShift,[Left,Right] Macro
-    jsr TestTile
-    ; after TestTile: Z == A = 1 if solid
-    ; store tile state in tmp5
-    sta Vb_tmp5 
-    ; load LeftWall state
-    lda Vb_LeftWall
-    ; shift left
-    clc
-    asl
-    ; set lsb
-    ora Vb_tmp5
-    ; store new sate
-    sta Vb_LeftWall
+    ; test tile and store/shift left wall state
+    M_CTS_TestAndShift Vb_LeftWall
     ; move right -> center tile
     M_Move Right,CTS_CenterTile
 CTS_CenterTile:
     jsr TestTile
-DEBUG1:
     ; not solid - don't care
     beq .drawDistAlreadySet
     lda Vb_DrawDist
@@ -482,19 +492,8 @@ DEBUG1:
     ; move right -> right tile
     M_Move Right,CTS_RightTile
 CTS_RightTile:
-    jsr TestTile
-    ; after TestTile: Z == A = 1 if solid
-    ; store tile state in tmp5
-    sta Vb_tmp5 
-    ; load LeftWall state
-    lda Vb_RightWall
-    ; shift left
-    clc
-    asl
-    ; set lsb
-    ora Vb_tmp5
-    ; store new sate
-    sta Vb_RightWall
+    ; test tile and store/shift right wall state
+    M_CTS_TestAndShift Vb_RightWall
     
     ; move one step forward and reset to center tile
     ; happens at the end of the loop b/c we also need to check
@@ -568,26 +567,6 @@ BREAKHERE:
     sta Vb_tmp5
     lda WalkingTableLO,x
     sta Vb_tmp4
-
-;    ; far wall
-;    ; calculate Vb_DrawDist
-;    ; reset
-;    lda #0
-;    sta Vb_DrawDist
-;    ; set up Vb_tmp1 and Vb_tmp2
-;    M_CopyPos2Tmp
-;FarWall: SUBROUTINE
-;    M_CallWalkStepReturn FarWallRet
-;FarWallRet:
-;    inc Vb_DrawDist
-;    beq .done
-;    lda #5
-;    cmp Vb_DrawDist
-;    bcc .done
-;    jsr TestTile
-;    beq FarWall
-;.done
-DEBUG3:
 
 LeftWall: SUBROUTINE
     ; set up Vb_tmp1 and Vb_tmp2
