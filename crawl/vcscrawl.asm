@@ -444,97 +444,147 @@ NoMovement:
 
 
 ; calculate wall and tunnel states
-;
-; tmp4,5 = player_pos
-; for (i=0; i<C_MAX_DRAW_DIST; i++) {
-;   move left
-;   check tile
-;   save state left
-;   move right (to middle)
-;   check tile
-;   inc draw dist if not solid
-;
-; }
 CalcTunnelState: SUBROUTINE
+; first: calc draw distance
+; TODO: this is where we find possible map objects (sprites) to draw as well
+; WARNING: runtime depends on effective draw distance,
+;          performance should always be tested for worst
+;          case: draw distance == 5 tiles
+.CenterTile:
     ; initialize variables
     M_CopyPos2Tmp
     lda #0
-    sta Vb_LeftWall
-    sta Vb_RightWall
     sta Vb_DrawDist
-    lda #C_MAX_DRAW_DIST
-    ; loop C_MAX_DRAW_DIST times
-    ; use Vb_tmp6 as loop counter
-    ; for (tmp6 = C_MAX_DRAW_DIST; tmp6 > 0; tmp6--) {
-    ; ...
-    ; }
-    sta Vb_tmp6
-.DrawDistLoop:    
-    ; we start at the left tile
-    M_Move Left,CTS_LeftTile
-CTS_LeftTile:
-    ; test tile and store/shift left wall state
-    M_CTS_TestAndShift Vb_LeftWall
-    ; move right -> center tile
-    M_Move Right,CTS_CenterTile
-CTS_CenterTile:
+.centerLoop:
+    ; inc draw distance
+    inc Vb_DrawDist
+    ; move one step forward
+    M_Move Forward, CTS_CenterTest
+CTS_CenterTest:
     jsr TestTile
     ; not solid - don't care
-    beq .drawDistAlreadySet
+    beq .centerLoopCheck
+    ; else: break loop
+    jmp .LeftTile
+.centerLoopCheck
+    ; break if C_MAX_DRAW_DIST is reached
     lda Vb_DrawDist
-    ; DrawDist already set, don't overwrite
-    bne .drawDistAlreadySet
-    ; solid tile && DrawDist == 0
-    ;    -> DrawDist := loop variable's value
-    lda Vb_tmp6
-    sta Vb_DrawDist
-.drawDistAlreadySet
-    ; move right -> right tile
-    M_Move Right,CTS_RightTile
-CTS_RightTile:
-    ; test tile and store/shift right wall state
-    M_CTS_TestAndShift Vb_RightWall
-    
-    ; move one step forward and reset to center tile
-    ; happens at the end of the loop b/c we also need to check
-    ; current position's tile state
-    ; move forward
-    M_Move Forward,CTS_MoveToCenter
-    ; move Left, back to center
-CTS_MoveToCenter
-    M_Move Left,CTS_LoopCheck
+    cmp #C_MAX_DRAW_DIST
+    bne .centerLoop
 
-    ; break loop?
-CTS_LoopCheck:
-    dec Vb_tmp6
-    ; bne .DrawDistLoop is too far a jump...
-    beq .breakLoop
-    jmp .DrawDistLoop
-.breakLoop:
-
-DEBUG2:
-    ; "normalize" tunnel state vars
-    lda Vb_DrawDist
-    beq .drawDistZero
-    ; DrawDist := MAX - DrawDist
-    lda #C_MAX_DRAW_DIST
-    sec
-    sbc Vb_DrawDist
-    sta Vb_DrawDist
-    jmp .finalizeLeftWall
-.drawDistZero:
-    ; DrawDist cannot be 0, so we assume MAX then
-    lda #C_MAX_DRAW_DIST
-    sta Vb_DrawDist
-    ; we don't care about the farthest tile as it's out of sight
-    ; so we shift the state vars left
-.finalizeLeftWall:
-    lda Vb_LeftWall
-    lsr
+; calc left wall state
+; uses Vb_tmp6 as loop var
+.LeftTile:
+    ; initialize variables
+    lda #C_MAX_DRAW_DIST-1
+    sta Vb_tmp6
+    lda #0
     sta Vb_LeftWall
-    lda Vb_RightWall
-    lsr
+    ; init position
+    M_CopyPos2Tmp
+    M_Move Left, CTS_LeftLoop
+CTS_LeftLoop:
+    M_CTS_TestAndShift Vb_LeftWall
+    ; dec loop var, break if 0
+    dec Vb_tmp6
+    beq .RightTile
+    ; != 0, move forward
+    M_Move Forward, CTS_LeftLoop
+
+; calc left wall state
+; uses Vb_tmp6 as loop var
+.RightTile:
+    ; initialize variables
+    lda #C_MAX_DRAW_DIST-1
+    sta Vb_tmp6
+    lda #0
     sta Vb_RightWall
+    ; init position
+    M_CopyPos2Tmp
+    M_Move Right, CTS_RightLoop
+CTS_RightLoop:
+    M_CTS_TestAndShift Vb_RightWall
+    ; dec loop var, break if 0
+    dec Vb_tmp6
+    beq .finalize
+    ; != 0, move forward
+    M_Move Forward, CTS_RightLoop
+    
+
+.finalize:
+DEBUG
+
+
+;      ; move right -> right tile
+;      M_Move Right,CTS_RightTile
+;  
+;  .LeftTile:
+;  CTS_LeftTile:
+;      ; initialize variables
+;      M_CopyPos2Tmp
+;      lda #0
+;      sta Vb_LeftWall
+;      sta Vb_RightWall
+;      sta Vb_DrawDist
+;      lda #C_MAX_DRAW_DIST
+;      ; loop C_MAX_DRAW_DIST times
+;      ; use Vb_tmp6 as loop counter
+;      ; for (tmp6 = C_MAX_DRAW_DIST; tmp6 > 0; tmp6--) {
+;      ; ...
+;      ; }
+;      sta Vb_tmp6
+;  .DrawDistLoop:    
+;      ; we start at the left tile
+;      M_Move Left,CTS_LeftTile
+;  CTS_LeftTile:
+;      ; test tile and store/shift left wall state
+;      M_CTS_TestAndShift Vb_LeftWall
+;      ; move right -> center tile
+;      M_Move Right,CTS_CenterTile
+;  CTS_RightTile:
+;      ; test tile and store/shift right wall state
+;      M_CTS_TestAndShift Vb_RightWall
+;      
+;      ; move one step forward and reset to center tile
+;      ; happens at the end of the loop b/c we also need to check
+;      ; current position's tile state
+;      ; move forward
+;      M_Move Forward,CTS_MoveToCenter
+;      ; move Left, back to center
+;  CTS_MoveToCenter
+;      M_Move Left,CTS_LoopCheck
+;  
+;      ; break loop?
+;  CTS_LoopCheck:
+;      dec Vb_tmp6
+;      ; bne .DrawDistLoop is too far a jump...
+;      beq .breakLoop
+;      jmp .DrawDistLoop
+;  .breakLoop:
+;  
+;  DEBUG2:
+;      ; "normalize" tunnel state vars
+;      lda Vb_DrawDist
+;      beq .drawDistZero
+;      ; DrawDist := MAX - DrawDist
+;      lda #C_MAX_DRAW_DIST
+;      sec
+;      sbc Vb_DrawDist
+;      sta Vb_DrawDist
+;      jmp .finalizeLeftWall
+;  .drawDistZero:
+;      ; DrawDist cannot be 0, so we assume MAX then
+;      lda #C_MAX_DRAW_DIST
+;      sta Vb_DrawDist
+;      ; we don't care about the farthest tile as it's out of sight
+;      ; so we shift the state vars left
+;  .finalizeLeftWall:
+;      lda Vb_LeftWall
+;      lsr
+;      sta Vb_LeftWall
+;      lda Vb_RightWall
+;      lsr
+;      sta Vb_RightWall
 
 BREAKHERE:
 
