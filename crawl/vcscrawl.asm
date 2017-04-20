@@ -52,7 +52,7 @@ C_MAX_DRAW_DIST = 5
 ;----------------------------
 ; Macros   
 ;----------------------------
-
+    ;####################################################################
     ; "walks" a step in the direction defined by Vb_PlayerOrientation
     ; basically just calls the MoveEast/South/West/North subroutine
     ; pointed to by Vb_tmp4 and Vb_tmp5, then returns to {1}
@@ -69,8 +69,10 @@ C_MAX_DRAW_DIST = 5
     jmp (Vb_tmp4)
 
     ENDM ;--- M_CallWalkStepReturn
+    ;####################################################################
 
 
+    ;####################################################################
     ; movement macros
     ; calls appropriate Move* subroutines 
     ; destroys 
@@ -95,8 +97,10 @@ C_MAX_DRAW_DIST = 5
     jmp (Vb_tmp4)
 
     ENDM ;--- M_Move
+    ;####################################################################
 
 
+    ;####################################################################
     ; sets COLUBK to {1} or PFCOL
     ; depending on X < / >= Vb_DrawDist
     ; expects X to contain the section's draw distance
@@ -116,8 +120,10 @@ C_MAX_DRAW_DIST = 5
     sta COLUBK
 
     ENDM ;--- M_CullBG
+    ;####################################################################
 
     
+    ;####################################################################
     ; load PosX/Y into Vb_tmp1/2
     MAC M_CopyPos2Tmp
 
@@ -127,7 +133,10 @@ C_MAX_DRAW_DIST = 5
     sta Vb_tmp2
 
     ENDM ;--- M_CopyPos2Tmp
+    ;####################################################################
 
+
+    ;####################################################################
     ; calls TestTile, then combines result
     ; /w {1} and shifts left
     ; uses Vb_tmp5 to temporarily store test result
@@ -150,6 +159,7 @@ C_MAX_DRAW_DIST = 5
     sta {1}
 
     ENDM ;--- M_CTS_TestAndShift
+    ;####################################################################
 
 ;############################
 ; Bank1
