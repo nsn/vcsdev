@@ -137,32 +137,6 @@ C_MAX_DRAW_DIST = 5
 
 
     ;####################################################################
-    ; calls TestTile, then combines result
-    ; /w {1} and shifts left
-    ; uses Vb_tmp5 to temporarily store test result
-    ; expects test coords to be stored in tmp1/tmp2
-    ; param {1} target wall state variable
-    MAC M_CTS_TestAndShift
-    ; test if tile is solid
-    jsr TestTile
-    ; after TestTile: Z == A = 1 if solid
-    ; store tile state in tmp5
-    sta Vb_tmp5 
-    ; load wall state
-    lda {1}
-    ; shift left
-    clc
-    asl
-    ; set lsb
-    ora Vb_tmp5
-    ; store new sate
-    sta {1}
-
-    ENDM ;--- M_CTS_TestAndShift
-    ;####################################################################
-
-
-    ;####################################################################
     ; calculate wall state, uses Vb_tmp6 and Vb_tmp5
     ; param {1} Left/Right
     ; param {2} label to break to
@@ -178,7 +152,6 @@ C_MAX_DRAW_DIST = 5
 CTS_{1}Loop:
     ; test if tile is solid
     jsr TestTile
-DEBUG{1}1:
     ; after TestTile: Z == A = 1 if solid
     ; store tile state in tmp5
     sta Vb_tmp5 
@@ -526,116 +499,8 @@ CTS_LeftTile:
 ; calc right wall state
 CTS_RightTile:
     M_CTS_LOOP Right, CTS_Finalize
-;        ; initialize variables
-;        lda #C_MAX_DRAW_DIST-1
-;        sta Vb_tmp6
-;        lda #0
-;        sta Vb_LeftWall
-;        ; init position
-;        M_CopyPos2Tmp
-;        M_Move Left, CTS_LeftLoop
-;    CTS_LeftLoop:
-;        M_CTS_TestAndShift Vb_LeftWall
-;        ; dec loop var, break if 0
-;        dec Vb_tmp6
-;        beq .RightTile
-;        ; != 0, move forward
-;        M_Move Forward, CTS_LeftLoop
-;    
-;    ; calc left wall state
-;    ; uses Vb_tmp6 as loop var
-;    .RightTile:
-;        ; initialize variables
-;        lda #C_MAX_DRAW_DIST-1
-;        sta Vb_tmp6
-;        lda #0
-;        sta Vb_RightWall
-;        ; init position
-;        M_CopyPos2Tmp
-;        M_Move Right, CTS_RightLoop
-;    CTS_RightLoop:
-;        M_CTS_TestAndShift Vb_RightWall
-;        ; dec loop var, break if 0
-;        dec Vb_tmp6
-;        beq .finalize
-;        ; != 0, move forward
-;        M_Move Forward, CTS_RightLoop
     
 CTS_Finalize:
-.finalize:
-DEBUG
-
-
-;      ; move right -> right tile
-;      M_Move Right,CTS_RightTile
-;  
-;  .LeftTile:
-;  CTS_LeftTile:
-;      ; initialize variables
-;      M_CopyPos2Tmp
-;      lda #0
-;      sta Vb_LeftWall
-;      sta Vb_RightWall
-;      sta Vb_DrawDist
-;      lda #C_MAX_DRAW_DIST
-;      ; loop C_MAX_DRAW_DIST times
-;      ; use Vb_tmp6 as loop counter
-;      ; for (tmp6 = C_MAX_DRAW_DIST; tmp6 > 0; tmp6--) {
-;      ; ...
-;      ; }
-;      sta Vb_tmp6
-;  .DrawDistLoop:    
-;      ; we start at the left tile
-;      M_Move Left,CTS_LeftTile
-;  CTS_LeftTile:
-;      ; test tile and store/shift left wall state
-;      M_CTS_TestAndShift Vb_LeftWall
-;      ; move right -> center tile
-;      M_Move Right,CTS_CenterTile
-;  CTS_RightTile:
-;      ; test tile and store/shift right wall state
-;      M_CTS_TestAndShift Vb_RightWall
-;      
-;      ; move one step forward and reset to center tile
-;      ; happens at the end of the loop b/c we also need to check
-;      ; current position's tile state
-;      ; move forward
-;      M_Move Forward,CTS_MoveToCenter
-;      ; move Left, back to center
-;  CTS_MoveToCenter
-;      M_Move Left,CTS_LoopCheck
-;  
-;      ; break loop?
-;  CTS_LoopCheck:
-;      dec Vb_tmp6
-;      ; bne .DrawDistLoop is too far a jump...
-;      beq .breakLoop
-;      jmp .DrawDistLoop
-;  .breakLoop:
-;  
-;  DEBUG2:
-;      ; "normalize" tunnel state vars
-;      lda Vb_DrawDist
-;      beq .drawDistZero
-;      ; DrawDist := MAX - DrawDist
-;      lda #C_MAX_DRAW_DIST
-;      sec
-;      sbc Vb_DrawDist
-;      sta Vb_DrawDist
-;      jmp .finalizeLeftWall
-;  .drawDistZero:
-;      ; DrawDist cannot be 0, so we assume MAX then
-;      lda #C_MAX_DRAW_DIST
-;      sta Vb_DrawDist
-;      ; we don't care about the farthest tile as it's out of sight
-;      ; so we shift the state vars left
-;  .finalizeLeftWall:
-;      lda Vb_LeftWall
-;      lsr
-;      sta Vb_LeftWall
-;      lda Vb_RightWall
-;      lsr
-;      sta Vb_RightWall
 
 BREAKHERE:
 
