@@ -161,6 +161,44 @@ C_MAX_DRAW_DIST = 5
     ENDM ;--- M_CTS_TestAndShift
     ;####################################################################
 
+
+    ;####################################################################
+    ; calculate wall state, uses Vb_tmp6 and Vb_tmp5
+    ; param {1} Left/Right
+    ; param {2} label to break to
+    MAC M_CTS_LOOP
+    ; initialize variables
+    lda #C_MAX_DRAW_DIST-1
+    sta Vb_tmp6
+    lda #0
+    sta Vb_{1}Wall
+    ; init position
+    M_CopyPos2Tmp
+    M_Move {1}, CTS_{1}Loop
+CTS_{1}Loop:
+    ; test if tile is solid
+    jsr TestTile
+DEBUG{1}1:
+    ; after TestTile: Z == A = 1 if solid
+    ; store tile state in tmp5
+    sta Vb_tmp5 
+    ; load wall state
+    lda Vb_{1}Wall
+    ; shift left
+    clc
+    asl
+    ; set lsb
+    ora Vb_tmp5
+    ; store new sate
+    sta Vb_{1}Wall
+    ; dec loop var, break if 0
+    dec Vb_tmp6
+    beq {2}
+    ; != 0, move forward
+    M_Move Forward, CTS_{1}Loop
+    ENDM ;--- M_CTS_LOOP
+    ;####################################################################
+
 ;############################
 ; Bank1
 ;############################
@@ -475,7 +513,7 @@ CTS_CenterTest:
     ; not solid - don't care
     beq .centerLoopCheck
     ; else: break loop
-    jmp .LeftTile
+    jmp CTS_LeftTile
 .centerLoopCheck
     ; break if C_MAX_DRAW_DIST is reached
     lda Vb_DrawDist
@@ -483,44 +521,47 @@ CTS_CenterTest:
     bne .centerLoop
 
 ; calc left wall state
-; uses Vb_tmp6 as loop var
-.LeftTile:
-    ; initialize variables
-    lda #C_MAX_DRAW_DIST-1
-    sta Vb_tmp6
-    lda #0
-    sta Vb_LeftWall
-    ; init position
-    M_CopyPos2Tmp
-    M_Move Left, CTS_LeftLoop
-CTS_LeftLoop:
-    M_CTS_TestAndShift Vb_LeftWall
-    ; dec loop var, break if 0
-    dec Vb_tmp6
-    beq .RightTile
-    ; != 0, move forward
-    M_Move Forward, CTS_LeftLoop
-
-; calc left wall state
-; uses Vb_tmp6 as loop var
-.RightTile:
-    ; initialize variables
-    lda #C_MAX_DRAW_DIST-1
-    sta Vb_tmp6
-    lda #0
-    sta Vb_RightWall
-    ; init position
-    M_CopyPos2Tmp
-    M_Move Right, CTS_RightLoop
-CTS_RightLoop:
-    M_CTS_TestAndShift Vb_RightWall
-    ; dec loop var, break if 0
-    dec Vb_tmp6
-    beq .finalize
-    ; != 0, move forward
-    M_Move Forward, CTS_RightLoop
+CTS_LeftTile:
+    M_CTS_LOOP Left, CTS_RightTile
+; calc right wall state
+CTS_RightTile:
+    M_CTS_LOOP Right, CTS_Finalize
+;        ; initialize variables
+;        lda #C_MAX_DRAW_DIST-1
+;        sta Vb_tmp6
+;        lda #0
+;        sta Vb_LeftWall
+;        ; init position
+;        M_CopyPos2Tmp
+;        M_Move Left, CTS_LeftLoop
+;    CTS_LeftLoop:
+;        M_CTS_TestAndShift Vb_LeftWall
+;        ; dec loop var, break if 0
+;        dec Vb_tmp6
+;        beq .RightTile
+;        ; != 0, move forward
+;        M_Move Forward, CTS_LeftLoop
+;    
+;    ; calc left wall state
+;    ; uses Vb_tmp6 as loop var
+;    .RightTile:
+;        ; initialize variables
+;        lda #C_MAX_DRAW_DIST-1
+;        sta Vb_tmp6
+;        lda #0
+;        sta Vb_RightWall
+;        ; init position
+;        M_CopyPos2Tmp
+;        M_Move Right, CTS_RightLoop
+;    CTS_RightLoop:
+;        M_CTS_TestAndShift Vb_RightWall
+;        ; dec loop var, break if 0
+;        dec Vb_tmp6
+;        beq .finalize
+;        ; != 0, move forward
+;        M_Move Forward, CTS_RightLoop
     
-
+CTS_Finalize:
 .finalize:
 DEBUG
 
@@ -813,13 +854,13 @@ MoveNorth: SUBROUTINE
     dec Vb_tmp2
     rts
 MoveEast: SUBROUTINE
-    inc Vb_tmp1
+    dec Vb_tmp1
     rts
 MoveSouth: SUBROUTINE
     inc Vb_tmp2
     rts
 MoveWest: SUBROUTINE
-    dec Vb_tmp1
+    inc Vb_tmp1
     rts
 
 ;----------------------------
@@ -860,16 +901,17 @@ MoveRightPtrLOTable:
 
 
     ; walk subroutine pointer table
+    ; TODO: remove!
 WalkingTableHI:
-    .byte >(MoveEast)
-    .byte >(MoveSouth)
     .byte >(MoveWest)
+    .byte >(MoveSouth)
+    .byte >(MoveEast)
     .byte >(MoveNorth)
 
 WalkingTableLO:
-    .byte <(MoveEast)
-    .byte <(MoveSouth)
     .byte <(MoveWest)
+    .byte <(MoveSouth)
+    .byte <(MoveEast)
     .byte <(MoveNorth)
 
     ; playfield data
