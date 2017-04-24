@@ -501,6 +501,14 @@ CTS_RightTile:
     M_CTS_LOOP Right, CTS_Finalize
     
 CTS_Finalize:
+    ; mask off wall states according to drawing distance
+    ldx Vb_DrawDist
+    lda WallStateMaskTable,x
+    and Vb_LeftWall
+    sta Vb_LeftWall
+    lda WallStateMaskTable,x
+    and Vb_RightWall
+    sta Vb_RightWall
 
 BREAKHERE:
 
@@ -733,6 +741,16 @@ MoveWest: SUBROUTINE
 ;----------------------------
 
     echo "---- start data at ",(*)
+    ; wall state mask table
+    ; index is draw distance
+WallStateMaskTable:
+    .byte #%00000000    ; DrawDist = 0, should never happen
+    .byte #%00001000    ; DrawDist = 1
+    .byte #%00001100    ; DrawDist = 2
+    .byte #%00001110    ; DrawDist = 3
+    .byte #%00001111    ; DrawDist = 4
+    .byte #%00001111    ; DrawDist = 5, should never happen
+
 
     ; movement soubroutine pointer table
     ; all Move* subroutines pointers share a single HI byte
