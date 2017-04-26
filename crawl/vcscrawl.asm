@@ -232,9 +232,10 @@ Vb_LeftWall      ds 1
 Vb_RightWall     ds 1
 ; basically how far to the end of the tunnel?
 Vb_DrawDist      ds 1
-; BGColor value, 2 bytes
-Vb_BGColOdd           ds 1
-Vb_BGColEven          ds 1
+; BGColor value, 3 bytes
+Vb_BGColOdd      ds 1
+Vb_BGColEven     ds 1
+Vb_BGColFar      ds 1
 
     echo "----",($100 - *) , "bytes of RAM left"
 ;--- end Variables 
@@ -477,6 +478,8 @@ CalcTunnelState: SUBROUTINE
     M_CopyPos2Tmp
     lda #0
     sta Vb_DrawDist
+    lda #COL_BG_SOLID
+    sta Vb_BGColFar
 .centerLoop:
     ; inc draw distance
     inc Vb_DrawDist
@@ -510,6 +513,15 @@ CTS_Finalize:
     lda WallStateMaskTable,x
     and Vb_RightWall
     sta Vb_RightWall
+    ; set Vb_BGColFar to EMPTY if DrawDist >= MAX
+    cpx #C_MAX_DRAW_DIST
+    ; x < MAX? then Vb_BGColFar stays == SOLID
+    bcc CTS_Done
+    ; else Vb_BGColFar := EMPTY
+    lda #COL_BG_EMPTY
+    sta Vb_BGColFar
+CTS_Done:
+
 
     ; set playfield data pointers 
     ; according to position in maze
@@ -585,7 +597,8 @@ DrawScreen:
     ; far end of tunnel
     ; 32 scanlines...
     ldy #31
-TunnelSection4:
+TunnelCenter:
+    sta WSYNC
     ; assume BG is solid
     lda #COL_BG_SOLID
     sta COLUBK
@@ -596,12 +609,31 @@ TunnelSection4:
     lda PF_WALL_STATE_1,x
     sta PF1
     lda PF_WALL_STATE_2,x
+    sta PF2   
+    ; 30 cycles - it's safe to re-set PF
+    ldx Vb_RightWall
+    ;32 - wait for PF-Pixel 15 to be drawn 
+    SLEEP 3 
+    ; set far end bg color
+    lda Vb_BGColFar ; +3 
+    sta COLUBK      ; +3
+    ;44
+    ; set PF registers in reverse order
+BREAK:
+    lda PF_WALL_STATE_2,x
     sta PF2
+    lda PF_WALL_STATE_1,x
+    sta PF1
+    ; re-set bg col to solid
+    lda #COL_BG_SOLID
+    sta COLUBK
+    
+    lda PF_WALL_STATE_0,x
+    sta PF0   
 
-    sta WSYNC
-
+    ; section loop
     dey
-    bne TunnelSection4
+    bne TunnelCenter
 
     ; reset
     ; TODO: remove
