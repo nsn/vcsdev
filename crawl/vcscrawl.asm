@@ -40,10 +40,11 @@
 VBLANK_WAIT = 42
 NUM_SCANLINES = 191
 
-BGCOL_DARK = $E4
-BGCOL_LIGHT = $E8
-BGCOL_FAR = $00
-PFCOL = $0E
+COL_BG_DARK = $E4
+COL_BG_LIGHT = $E8
+COL_BG_EMPTY = $00
+COL_BG_SOLID = $0C
+COL_PF_SOLID = $08
 
 C_MAX_DRAW_DIST = 5
 
@@ -101,7 +102,7 @@ C_MAX_DRAW_DIST = 5
 
 
     ;####################################################################
-    ; sets COLUBK to {1} or PFCOL
+    ; sets COLUBK to {1} or COL_PF_SOLID
     ; depending on X < / >= Vb_DrawDist
     ; expects X to contain the section's draw distance
     MAC M_CullBG
@@ -109,7 +110,7 @@ C_MAX_DRAW_DIST = 5
     cpx Vb_DrawDist        ; +3
     bcc .nocull             ; +2/3
     ; X  >= Vb_DrawDist -> cull
-    lda #PFCOL              ; +3 (6)
+    lda #COL_PF_SOLID              ; +3 (6)
     jmp .setbg              ; +3 (8)
 .nocull
     ; X < Vb_DrawDist -> nocull
@@ -282,10 +283,10 @@ InitMaze:
     lda #$00
     sta COLUBK
     ; set pf color
-    lda #PFCOL
+    lda #COL_PF_SOLID
     sta COLUPF
     ; set pf behaviour
-    lda #%00000000
+    lda #%00000001
     sta CTRLPF
     ; set player color
     lda #$38
@@ -510,8 +511,6 @@ CTS_Finalize:
     and Vb_RightWall
     sta Vb_RightWall
 
-BREAKHERE:
-
     ; set playfield data pointers 
     ; according to position in maze
     ; first: set all to solid
@@ -527,132 +526,28 @@ BREAKHERE:
     SET_POINTER Vptr_Sec3L, PF_1_0 
     SET_POINTER Vptr_Sec3R, PF_1_0
 
-    ; set up Vb_tmp4 and Vb_tmp5 as pointer to the correct walking subrouting
-    ; D0 of Vb_PlayerOrientation: 0 -> E/W, 1 -> N,S
-    ; D1 of Vb_PlayerOrientation: 0 -> inc, 1-> dec
-    ; 0 0  E
-    ; 0 1  S
-    ; 1 0  W
-    ; 1 1  N
-    ; calc direction index and store in x
-    ldx Vb_PlayerOrientation
-    ; load appropriate subroutine location into Vb_tmp4 and Vb_tmp5
-    lda WalkingTableHI,x
-    sta Vb_tmp5
-    lda WalkingTableLO,x
-    sta Vb_tmp4
-
-LeftWall: SUBROUTINE
-    ; set up Vb_tmp1 and Vb_tmp2
-    M_CopyPos2Tmp
-    ; modify according to Vb_PlayerOrientation
-    lda Vb_PlayerOrientation
-    ; facing east?
-    cmp #%00
-    bne .notEast
-    inc Vb_tmp2
-    jmp .LeftWallStep0
-.notEast
-    ; facing south?
-    cmp #%01
-    bne .notSouth
-    dec Vb_tmp1
-    jmp .LeftWallStep0
-.notSouth
-    ; facing west?
-    cmp #%10
-    bne .notWest
-    dec Vb_tmp2
-    jmp .LeftWallStep0
-.notWest
-    ; facint north!
-    inc Vb_tmp1
-.LeftWallStep0:
-    ; test tile, set wall pointer accordingly
-    jsr TestTile
-    bne .solid0
-    SET_POINTER Vptr_Sec0L, PF_NONE
-.solid0
-    ; walk one step formward
-    M_CallWalkStepReturn LeftWallStep1
-LeftWallStep1:
-    ; test tile, set wall pointer accordingly
-    jsr TestTile
-    bne .solid1
-    SET_POINTER Vptr_Sec1L, PF_NONE
-.solid1
-    ; walk one step formward
-    M_CallWalkStepReturn LeftWallStep2
-LeftWallStep2:
-    ; test tile, set wall pointer accordingly
-    jsr TestTile
-    bne .solid2
-    SET_POINTER Vptr_Sec2L, PF_NONE
-.solid2
-    ; walk one step formward
-    M_CallWalkStepReturn LeftWallStep3
-LeftWallStep3:
-    ; test tile, set wall pointer accordingly
-    jsr TestTile
-    bne .solid3
-    SET_POINTER Vptr_Sec3L, PF_NONE
-.solid3
-    ; right corridor wall
-RightWall: SUBROUTINE
-    ; set up Vb_tmp1 and Vb_tmp2
-    M_CopyPos2Tmp
-    ; modify according to Vb_PlayerOrientation
-    lda Vb_PlayerOrientation
-    ; facing east?
-    cmp #%00
-    bne .notEast
-    dec Vb_tmp2
-    jmp .RightWallStep0
-.notEast
-    ; facing south?
-    cmp #%01
-    bne .notSouth
-    inc Vb_tmp1
-    jmp .RightWallStep0
-.notSouth
-    ; facing west?
-    cmp #%10
-    bne .notWest
-    inc Vb_tmp2
-    jmp .RightWallStep0
-.notWest
-    ; facint north!
-    dec Vb_tmp1
-.RightWallStep0:
-    ; test tile, set wall pointer accordingly
-    jsr TestTile
-    bne .solid0
-    SET_POINTER Vptr_Sec0R, PF_NONE
-.solid0
-    ; walk one step formward
-    M_CallWalkStepReturn RightWallStep1
-RightWallStep1:
-    ; test tile, set wall pointer accordingly
-    jsr TestTile
-    bne .solid1
-    SET_POINTER Vptr_Sec1R, PF_NONE
-.solid1
-    ; walk one step formward
-    M_CallWalkStepReturn RightWallStep2
-RightWallStep2:
-    ; test tile, set wall pointer accordingly
-    jsr TestTile
-    bne .solid2
-    SET_POINTER Vptr_Sec2R, PF_NONE
-.solid2
-    ; walk one step formward
-    M_CallWalkStepReturn RightWallStep3
-RightWallStep3:
-    ; test tile, set wall pointer accordingly
-    jsr TestTile
-    bne .solid3
-    SET_POINTER Vptr_Sec3R, PF_NONE
-.solid3
+; TODO: REMOVE
+;       ; set up Vb_tmp4 and Vb_tmp5 as pointer to the correct walking subrouting
+;       ; D0 of Vb_PlayerOrientation: 0 -> E/W, 1 -> N,S
+;       ; D1 of Vb_PlayerOrientation: 0 -> inc, 1-> dec
+;       ; 0 0  E
+;       ; 0 1  S
+;       ; 1 0  W
+;       ; 1 1  N
+;       ; calc direction index and store in x
+;       ldx Vb_PlayerOrientation
+;       ; load appropriate subroutine location into Vb_tmp4 and Vb_tmp5
+;       lda WalkingTableHI,x
+;       sta Vb_tmp5
+;       lda WalkingTableLO,x
+;       sta Vb_tmp4
+;   
+;   .LeftWallStep0:
+;       ; test tile, set wall pointer accordingly
+;       jsr TestTile
+;       bne .solid0
+;       SET_POINTER Vptr_Sec0L, PF_NONE
+;   .solid0
      
     ; set background color
     ; according to position in maze
@@ -662,12 +557,12 @@ BackgroundColor: SUBROUTINE
     adc Vb_PlayerPosY
     and #1
     beq .odd
-    ldx #BGCOL_LIGHT
-    ldy #BGCOL_DARK
+    ldx #COL_BG_LIGHT
+    ldy #COL_BG_DARK
     jmp .bgcolend
 .odd
-    ldx #BGCOL_DARK
-    ldy #BGCOL_LIGHT
+    ldx #COL_BG_DARK
+    ldy #COL_BG_LIGHT
 .bgcolend
     stx Vb_BGColOdd
     sty Vb_BGColEven
@@ -686,8 +581,37 @@ DrawScreen:
     bne DrawScreen
     sta VBLANK ; since A = #0
 
-    include "tunnelkernel.inc"
 
+    ; far end of tunnel
+    ; 32 scanlines...
+    ldy #31
+TunnelSection4:
+    ; assume BG is solid
+    lda #COL_BG_SOLID
+    sta COLUBK
+    ; load PF registers for left side
+    ldx Vb_LeftWall
+    lda PF_WALL_STATE_0,x
+    sta PF0
+    lda PF_WALL_STATE_1,x
+    sta PF1
+    lda PF_WALL_STATE_2,x
+    sta PF2
+
+    sta WSYNC
+
+    dey
+    bne TunnelSection4
+
+    ; reset
+    ; TODO: remove
+    lda #$5C
+    sta COLUBK
+    lda #0
+    sta PF0
+    sta PF1
+    sta PF2
+    sta WSYNC
 
     ; clear registers to prevent bleeding
     lda #2
@@ -799,6 +723,69 @@ WalkingTableLO:
 
     ; playfield data
     include "pfdata.inc"
+
+
+PF_WALL_STATE_0:
+        .byte #%00000000  ; 0000 
+        .byte #%00000000  ; 0001 
+        .byte #%00000000  ; 0010 
+        .byte #%00000000  ; 0011 
+        .byte #%00000000  ; 0100 
+        .byte #%00000000  ; 0101 
+        .byte #%00000000  ; 0110 
+        .byte #%00000000  ; 0111 
+        .byte #%11110000  ; 1000 
+        .byte #%11110000  ; 1001 
+        .byte #%11110000  ; 1010 
+        .byte #%11110000  ; 1011 
+        .byte #%11110000  ; 1100 
+        .byte #%11110000  ; 1101 
+        .byte #%11110000  ; 1110 
+        .byte #%11110000  ; 1111 
+
+PF_WALL_STATE_1:
+        .byte #%00000000  ; 0000 
+        .byte #%00000000  ; 0001 
+        .byte #%00001111  ; 0010 
+        .byte #%00001111  ; 0011 
+        .byte #%11110000  ; 0100 
+        .byte #%11110000  ; 0101 
+        .byte #%11111111  ; 0110 
+        .byte #%11111111  ; 0111 
+        .byte #%00000000  ; 1000 
+        .byte #%00000000  ; 1001 
+        .byte #%00001111  ; 1010 
+        .byte #%00001111  ; 1011 
+        .byte #%11110000  ; 1100 
+        .byte #%11110000  ; 1101 
+        .byte #%11111111  ; 1110 
+        .byte #%11111111  ; 1111 
+
+PF_WALL_STATE_2:
+        .byte #%00000000  ; 0000 
+        .byte #%00001111  ; 0001 
+        .byte #%00000000  ; 0010 
+        .byte #%00001111  ; 0011 
+        .byte #%00000000  ; 0100 
+        .byte #%00001111  ; 0101 
+        .byte #%00000000  ; 0110 
+        .byte #%00001111  ; 0111 
+        .byte #%00000000  ; 1000 
+        .byte #%00001111  ; 1001 
+        .byte #%00000000  ; 1010 
+        .byte #%00001111  ; 1011 
+        .byte #%00000000  ; 1100 
+        .byte #%00001111  ; 1101 
+        .byte #%00000000  ; 1110 
+        .byte #%00001111  ; 1111 
+
+
+
+
+
+
+
+
     ; sprites
     include "mobdata.inc"
 
