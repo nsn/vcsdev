@@ -596,8 +596,9 @@ DrawScreen:
 
     ; far end of tunnel
     ; 32 scanlines...
+TunnelCenter: SUBROUTINE
     ldy #31
-TunnelCenter:
+.sectionLoop:
     sta WSYNC
     ; assume BG is solid
     lda #COL_BG_SOLID
@@ -617,9 +618,7 @@ TunnelCenter:
     ; set far end bg color
     lda Vb_BGColFar ; +3 
     sta COLUBK      ; +3
-    ;44
     ; set PF registers in reverse order
-BREAK:
     lda PF_WALL_STATE_2,x
     sta PF2
     lda PF_WALL_STATE_1,x
@@ -627,13 +626,19 @@ BREAK:
     ; re-set bg col to solid
     lda #COL_BG_SOLID
     sta COLUBK
-    
+    ; finish playfield  
     lda PF_WALL_STATE_0,x
     sta PF0   
-
     ; section loop
     dey
-    bne TunnelCenter
+    bne .sectionLoop
+
+
+
+
+
+
+
 
     ; reset
     ; TODO: remove
