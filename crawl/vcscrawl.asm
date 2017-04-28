@@ -260,6 +260,8 @@ Vptr_Sec2Left       ds 2
 Vptr_Sec2Right       ds 2
 Vptr_Sec3Left       ds 2
 Vptr_Sec3Right       ds 2
+; MOB Pointer, 2 bytes
+Vptr_MOB         ds 2
 ; Wall states
 Vb_LeftWall      ds 1
 Vb_RightWall     ds 1
@@ -326,7 +328,7 @@ InitMaze:
     lda #$38
     sta COLUP0
     sta COLUP1
-    ; set Player sie
+    ; set Player size
     lda #7
     sta NUSIZ0
     sta NUSIZ1
@@ -581,8 +583,6 @@ CTS_Done:
     M_SetSecPtr 3, Left, PF_1_0
     M_SetSecPtr 3, Right, PF_1_0
 
-; TODO: REMOVE
-     
     ; set background color
     ; according to position in maze
 BackgroundColor: SUBROUTINE
@@ -602,7 +602,8 @@ BackgroundColor: SUBROUTINE
     sty Vb_BGColEven
     sty COLUBK
 
-
+    ; set MOB Pointer
+    SET_POINTER Vptr_MOB, SKELETON_P0
 
     rts ;--- GameState
 
@@ -647,7 +648,7 @@ Section0Top: SUBROUTINE
 ; --- ##########################
 ; 32 scanlines of TunnelCenter
 TunnelCenter: SUBROUTINE
-    ldy #31
+    ldy #32
 .sectionLoop:
     sta WSYNC
     ; assume BG is solid
@@ -679,6 +680,12 @@ TunnelCenter: SUBROUTINE
     ; finish playfield  
     lda PF_WALL_STATE_0,x
     sta PF0   
+
+;    lda (Vptr_MOB),y
+;    sta GRP0
+;    lda (Vptr_MOB),y
+;    sta GRP1
+
     ; section loop
     dey
     bne .sectionLoop
