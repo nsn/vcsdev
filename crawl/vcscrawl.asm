@@ -173,6 +173,39 @@ CTS_{1}Loop:
     ENDM ;--- M_CTS_LOOP
     ;####################################################################
 
+
+    ;####################################################################
+    ; M_SetSecPtr 0, Left, PF_1_0
+    MAC M_SetSecPtr
+
+    ;HI byte is always the same
+    lda #>{3}
+    sta Vptr_Sec{1}{2}+1
+    ;check wall state
+    lda Vb_{2}Wall
+    IF {1} == 0
+    and #%00001000
+    ENDIF
+    IF {1} == 1
+    and #%00000100
+    ENDIF
+    IF {1} == 2
+    and #%00000010
+    ENDIF
+    IF {1} == 3
+    and #%00000001
+    ENDIF
+    ;set load appropriate LO byte
+    bne .solid
+    lda #<PF_NONE
+    jmp .done
+.solid:
+    lda #<{3}
+.done:
+    ;store HI byte
+    sta Vptr_Sec{1}{2}
+    ENDM ;--- M_SetSecPtr 
+
 ;############################
 ; Bank1
 ;############################
@@ -219,14 +252,14 @@ Vb_MazeDC        ds 1
 Vb_MazeDD        ds 1
 ; wall section pointers:
 ; 4*2*2 = 16 bytes
-Vptr_Sec0L       ds 2
-Vptr_Sec0R       ds 2
-Vptr_Sec1L       ds 2
-Vptr_Sec1R       ds 2
-Vptr_Sec2L       ds 2
-Vptr_Sec2R       ds 2
-Vptr_Sec3L       ds 2
-Vptr_Sec3R       ds 2
+Vptr_Sec0Left       ds 2
+Vptr_Sec0Right       ds 2
+Vptr_Sec1Left       ds 2
+Vptr_Sec1Right       ds 2
+Vptr_Sec2Left       ds 2
+Vptr_Sec2Right       ds 2
+Vptr_Sec3Left       ds 2
+Vptr_Sec3Right       ds 2
 ; Wall states
 Vb_LeftWall      ds 1
 Vb_RightWall     ds 1
@@ -525,41 +558,30 @@ CTS_Done:
 
     ; set playfield data pointers 
     ; according to position in maze
-    ; first: set all to solid
-    SET_POINTER Vptr_Sec0L, PF_1_0 
-    SET_POINTER Vptr_Sec0R, PF_1_1
+    ;SET_POINTER Vptr_Sec0Left, PF_1_0 
+    ;SET_POINTER Vptr_Sec0Right, PF_1_0
+    ;SET_POINTER Vptr_Sec1Left, PF_1_1 
+    ;SET_POINTER Vptr_Sec1Right, PF_1_1
 
-    SET_POINTER Vptr_Sec1L, PF_1_1 
-    SET_POINTER Vptr_Sec1R, PF_1_1
+    ;SET_POINTER Vptr_Sec2Left, PF_1_1 
+    ;SET_POINTER Vptr_Sec2Right, PF_1_0
 
-    SET_POINTER Vptr_Sec2L, PF_1_1 
-    SET_POINTER Vptr_Sec2R, PF_1_0
+    ;SET_POINTER Vptr_Sec3Left, PF_1_0 
+    ;SET_POINTER Vptr_Sec3Right, PF_1_0
 
-    SET_POINTER Vptr_Sec3L, PF_1_0 
-    SET_POINTER Vptr_Sec3R, PF_1_0
+    M_SetSecPtr 0, Left, PF_1_0
+    M_SetSecPtr 0, Right, PF_1_0
+
+    M_SetSecPtr 1, Left, PF_1_1
+    M_SetSecPtr 1, Right, PF_1_1
+
+    M_SetSecPtr 2, Left, PF_1_1
+    M_SetSecPtr 2, Right, PF_1_0
+
+    M_SetSecPtr 3, Left, PF_1_0
+    M_SetSecPtr 3, Right, PF_1_0
 
 ; TODO: REMOVE
-;       ; set up Vb_tmp4 and Vb_tmp5 as pointer to the correct walking subrouting
-;       ; D0 of Vb_PlayerOrientation: 0 -> E/W, 1 -> N,S
-;       ; D1 of Vb_PlayerOrientation: 0 -> inc, 1-> dec
-;       ; 0 0  E
-;       ; 0 1  S
-;       ; 1 0  W
-;       ; 1 1  N
-;       ; calc direction index and store in x
-;       ldx Vb_PlayerOrientation
-;       ; load appropriate subroutine location into Vb_tmp4 and Vb_tmp5
-;       lda WalkingTableHI,x
-;       sta Vb_tmp5
-;       lda WalkingTableLO,x
-;       sta Vb_tmp4
-;   
-;   .LeftWallStep0:
-;       ; test tile, set wall pointer accordingly
-;       jsr TestTile
-;       bne .solid0
-;       SET_POINTER Vptr_Sec0L, PF_NONE
-;   .solid0
      
     ; set background color
     ; according to position in maze
@@ -593,9 +615,37 @@ DrawScreen:
     bne DrawScreen
     sta VBLANK ; since A = #0
 
+; --- ##########################
+; 16 Scanlines of Section0Top
+Section0Top: SUBROUTINE
+    ldy #15
+.lineLoop
+    sta WSYNC
+    ; bg color
+    lda Vb_BGColEven
+    sta COLUBK
+    lda (Vptr_Sec0Left),y      ; +5
+    sta PF0                 ; +3
+    lda #0                  ; +2
+    sta PF1                 ; +3
+    sta PF2                 ; +3 (18)
+    ; wait for PF0 to finish drawing
+    SLEEP 16
 
-    ; far end of tunnel
-    ; 32 scanlines...
+    lda #0                  ;
+    sta PF2                 ; +3 (8)
+    sta PF1                 ; +3 (8)
+    ; wait for P23 to finish drawing
+    SLEEP 6
+    lda (Vptr_Sec0Right),y
+    and #%11110000
+    sta PF0
+    dey
+    bpl .lineLoop
+
+
+; --- ##########################
+; 32 scanlines of TunnelCenter
 TunnelCenter: SUBROUTINE
     ldy #31
 .sectionLoop:
