@@ -44,7 +44,8 @@ COL_BG_DARK = $E4
 COL_BG_LIGHT = $E8
 COL_BG_EMPTY = $00
 COL_BG_SOLID = $0C
-COL_PF_SOLID = $08
+;COL_PF_SOLID = $08
+COL_PF_SOLID = $0C
 
 C_MAX_DRAW_DIST = 5
 
@@ -270,6 +271,9 @@ Vb_DrawDist      ds 1
 ; BGColor value, 3 bytes
 Vb_BGColOdd      ds 1
 Vb_BGColEven     ds 1
+Vb_BGColSec1     ds 1
+Vb_BGColSec2     ds 1
+Vb_BGColSec3     ds 1
 Vb_BGColFar      ds 1
 
     echo "----",($100 - *) , "bytes of RAM left"
@@ -513,8 +517,6 @@ CalcTunnelState: SUBROUTINE
     M_CopyPos2Tmp
     lda #0
     sta Vb_DrawDist
-    lda #COL_BG_SOLID
-    sta Vb_BGColFar
 .centerLoop:
     ; inc draw distance
     inc Vb_DrawDist
@@ -548,13 +550,7 @@ CTS_Finalize:
     lda WallStateMaskTable,x
     and Vb_RightWall
     sta Vb_RightWall
-    ; set Vb_BGColFar to EMPTY if DrawDist >= MAX
-    cpx #C_MAX_DRAW_DIST
-    ; x < MAX? then Vb_BGColFar stays == SOLID
-    bcc CTS_Done
-    ; else Vb_BGColFar := EMPTY
-    lda #COL_BG_EMPTY
-    sta Vb_BGColFar
+
 CTS_Done:
 
 
@@ -578,7 +574,7 @@ CTS_Done:
     M_SetSecPtr 1, Right, PF_1_1
 
     M_SetSecPtr 2, Left, PF_1_1
-    M_SetSecPtr 2, Right, PF_1_0
+    M_SetSecPtr 2, Right, PF_1_1
 
     M_SetSecPtr 3, Left, PF_1_0
     M_SetSecPtr 3, Right, PF_1_0
@@ -593,14 +589,24 @@ BackgroundColor: SUBROUTINE
     beq .odd
     ldx #COL_BG_LIGHT
     ldy #COL_BG_DARK
-    jmp .bgcolend
+    jmp .bgcolset
 .odd
     ldx #COL_BG_DARK
     ldy #COL_BG_LIGHT
-.bgcolend
+.bgcolset
     stx Vb_BGColOdd
     sty Vb_BGColEven
     sty COLUBK
+
+    ; set Vb_BGColFar to EMPTY if DrawDist >= MAX
+    ; x < MAX? then Vb_BGColFar stays == SOLID
+    ;bcc CTS_Done
+    ; else Vb_BGColFar := EMPTY
+    ;lda #COL_BG_EMPTY
+    ;sta Vb_BGColFar
+
+
+
 
     ; set MOB Pointer
     SET_POINTER Vptr_MOB, SKELETON_P0
@@ -621,18 +627,25 @@ DrawScreen:
 Section0Top: SUBROUTINE
     ldy #15
 .lineLoop
+    ; set bg
+    lda #COL_BG_SOLID
+    ldx Vb_DrawDist
     sta WSYNC
-    ; bg color
+    cpx #C_MAX_DRAW_DIST-4
+    bcc .solidbg
     lda Vb_BGColEven
+.solidbg:
     sta COLUBK
+
     lda (Vptr_Sec0Left),y      ; +5
     sta PF0                 ; +3
     lda #0                  ; +2
     sta PF1                 ; +3
     sta PF2                 ; +3 (18)
     ; wait for PF0 to finish drawing
-    SLEEP 16
-
+    SLEEP 12
+    
+    ; TODO: PF1/2 stay 0, can be optimized 
     lda #0                  ;
     sta PF2                 ; +3 (8)
     sta PF1                 ; +3 (8)
@@ -644,48 +657,200 @@ Section0Top: SUBROUTINE
     dey
     bpl .lineLoop
 
+; --- ##########################
+; 16 Scanlines of Section1Top
+Section1Top: SUBROUTINE
+    ldy #15
+    ; cycle #68
+.lineLoop
+    ; set bg
+    lda #COL_BG_SOLID
+    ldx Vb_DrawDist
+    sta WSYNC
+    cpx #C_MAX_DRAW_DIST-3
+    bcc .solidbg
+    lda Vb_BGColOdd
+.solidbg:
+    sta COLUBK
+
+    ; PF0 
+    ;ldx Vb_LeftWall
+    ;lda PF_WALL_STATE_0,x
+    lda #%11110000
+    sta PF0
+    ; PF1 depends on wall state
+    lda (Vptr_Sec1Left),y
+    and #%11110000
+    sta PF1
+    ; PF0 finished rendering
+    ; PF2 is fixed
+    lda #0
+    sta PF2
+    ; wait for first 8 PF pixels to finish
+    SLEEP 4
+
+    ; PF1 depends on wall state
+    lda (Vptr_Sec1Right),y
+    and #%11110000
+    sta PF1
+
+    ; PF0 
+    ldx Vb_LeftWall
+    ;lda PF_WALL_STATE_0,x
+    lda #%11110000
+    sta PF0
+
+    dey
+    bpl .lineLoop
+
+; --- ##########################
+; 16 Scanlines of Section2Top
+Section2Top: SUBROUTINE
+    ldy #15
+    ; cycle #68
+.lineLoop
+    ; set bg
+    lda #COL_BG_SOLID
+    ldx Vb_DrawDist
+    sta WSYNC
+    cpx #C_MAX_DRAW_DIST-2
+    bcc .solidbg
+    lda Vb_BGColEven
+.solidbg:
+    sta COLUBK
+
+    ; PF0 
+    ;ldx Vb_LeftWall
+    ;lda PF_WALL_STATE_0,x
+    lda #%11110000
+    sta PF0
+    ; PF1 depends on wall state
+    lda (Vptr_Sec2Left),y
+    ora #%11110000
+    sta PF1
+    ; PF0 finished rendering
+    ; PF2 is fixed
+    lda #0
+    sta PF2
+    ; wait for first 8 PF pixels to finish
+    SLEEP 4
+
+    ; PF1 depends on wall state
+    lda (Vptr_Sec2Right),y
+    ora #%11110000
+    sta PF1
+
+    ; PF0 
+    ldx Vb_LeftWall
+    ;lda PF_WALL_STATE_0,x
+    lda #%11110000
+    sta PF0
+
+    dey
+    bpl .lineLoop
+
+; --- ##########################
+; 16 Scanlines of Section3Top
+Section3Top: SUBROUTINE
+    ldy #15
+    ; cycle #68
+.lineLoop
+    ; set bg
+    lda #COL_BG_SOLID
+    ldx Vb_DrawDist
+    sta WSYNC
+    cpx #C_MAX_DRAW_DIST-1
+    bcc .solidbg
+    lda Vb_BGColOdd 
+.solidbg:
+    sta COLUBK
+    ; PF0 
+    ldx Vb_LeftWall
+    ;lda PF_WALL_STATE_0,x
+    lda #%11111111
+    sta PF0
+    ; PF1 
+    sta PF1
+    ; PF0 finished rendering
+    ; PF2 depends on wall state
+    lda (Vptr_Sec3Left),y
+    and #%00001111
+    sta PF2
+    ; wait for first 8 PF pixels to finish
+    SLEEP 3
+
+    ; PF1 depends on wall state
+    lda (Vptr_Sec3Right),y
+    and #%00001111
+    sta PF2
+
+    ; PF0 
+    ldx Vb_LeftWall
+    ;lda PF_WALL_STATE_0,x
+    lda #%11110000
+    sta PF0
+
+    dey
+    bpl .lineLoop
 
 ; --- ##########################
 ; 32 scanlines of TunnelCenter
 TunnelCenter: SUBROUTINE
-    ldy #32
+    ldy #31
 .sectionLoop:
     sta WSYNC
-    ; assume BG is solid
+    ; bg col
     lda #COL_BG_SOLID
+    ldx Vb_DrawDist
+    cpx #C_MAX_DRAW_DIST
+    ; DrawDist < MAX?
+    bcc .solidbg
+    ; DrawDist >= MAX
+    lda #COL_BG_EMPTY
+.solidbg:
     sta COLUBK
-    ; load PF registers for left side
-    ldx Vb_LeftWall
-    lda PF_WALL_STATE_0,x
+
+    lda #%11111111
     sta PF0
-    lda PF_WALL_STATE_1,x
     sta PF1
-    lda PF_WALL_STATE_2,x
-    sta PF2   
-    ; 30 cycles - it's safe to re-set PF
-    ldx Vb_RightWall
-    ;32 - wait for PF-Pixel 15 to be drawn 
-    SLEEP 3 
-    ; set far end bg color
-    lda Vb_BGColFar ; +3 
-    sta COLUBK      ; +3
-    ; set PF registers in reverse order
-    lda PF_WALL_STATE_2,x
+    and #%00001111
     sta PF2
-    lda PF_WALL_STATE_1,x
-    sta PF1
+
+    ;lda #COL_BG_SOLID
+    ;sta COLUBK
+    ; load PF registers for left side
+    ;ldx Vb_LeftWall
+    ;lda PF_WALL_STATE_0,x
+    ;sta PF0
+    ;lda PF_WALL_STATE_1,x
+    ;sta PF1
+    ;lda PF_WALL_STATE_2,x
+    ;sta PF2   
+    ; 30 cycles - it's safe to re-set PF
+    ;ldx Vb_RightWall
+    ;32 - wait for PF-Pixel 15 to be drawn 
+    ;SLEEP 3 
+    ; set far end bg color
+    ;lda Vb_BGColFar ; +3 
+    ;sta COLUBK      ; +3
+    ; set PF registers in reverse order
+    ;lda PF_WALL_STATE_2,x
+    ;sta PF2
+    ;lda PF_WALL_STATE_1,x
+    ;sta PF1
     ; re-set bg col to solid
-    lda #COL_BG_SOLID
-    sta COLUBK
+    ;lda #COL_BG_SOLID
+    ;sta COLUBK
     ; finish playfield  
-    lda PF_WALL_STATE_0,x
-    sta PF0   
+    ;lda PF_WALL_STATE_0,x
+    ;sta PF0   
 
 ;    lda (Vptr_MOB),y
 ;    sta GRP0
 ;    lda (Vptr_MOB),y
 ;    sta GRP1
 
+    SLEEP 2
     ; section loop
     dey
     bne .sectionLoop
