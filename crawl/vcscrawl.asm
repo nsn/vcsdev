@@ -850,27 +850,152 @@ TunnelCenter: SUBROUTINE
 ;    lda (Vptr_MOB),y
 ;    sta GRP1
 
-    SLEEP 2
+    ;SLEEP 2
     ; section loop
     dey
     bne .sectionLoop
 
 
-
-
-
-
-
-
-    ; reset
-    ; TODO: remove
-    lda #$5C
-    sta COLUBK
-    lda #0
-    sta PF0
-    sta PF1
-    sta PF2
+; --- ##########################
+; 16 Scanlines of Section3Bottom
+Section3Bottom: SUBROUTINE
+    ldy #0 
+    ; cycle #68
+.lineLoop
+    ; set bg
+    lda #COL_BG_SOLID
+    ldx Vb_DrawDist
     sta WSYNC
+    cpx #C_MAX_DRAW_DIST-1
+    bcc .solidbg
+    lda Vb_BGColOdd 
+.solidbg:
+    sta COLUBK
+    ; PF0 
+    ldx Vb_LeftWall
+    ;lda PF_WALL_STATE_0,x
+    lda #%11111111
+    sta PF0
+    ; PF1 
+    sta PF1
+    ; PF0 finished rendering
+    ; PF2 depends on wall state
+    lda (Vptr_Sec3Left),y
+    and #%00001111
+    sta PF2
+    ; wait for first 8 PF pixels to finish
+    SLEEP 3
+
+    ; PF1 depends on wall state
+    lda (Vptr_Sec3Right),y
+    and #%00001111
+    sta PF2
+
+    ; PF0 
+    ldx Vb_LeftWall
+    ;lda PF_WALL_STATE_0,x
+    lda #%11110000
+    sta PF0
+
+    iny
+    cpy #16
+    bne .lineLoop
+
+
+; --- ##########################
+; 16 Scanlines of Section2Bottom
+Section2Bottom: SUBROUTINE
+    ldy #0 
+    ; cycle #68
+.lineLoop
+    ; set bg
+    lda #COL_BG_SOLID
+    ldx Vb_DrawDist
+    sta WSYNC
+    cpx #C_MAX_DRAW_DIST-2
+    bcc .solidbg
+    lda Vb_BGColEven
+.solidbg:
+    sta COLUBK
+
+    ; PF0 
+    ;ldx Vb_LeftWall
+    ;lda PF_WALL_STATE_0,x
+    lda #%11110000
+    sta PF0
+    ; PF1 depends on wall state
+    lda (Vptr_Sec2Left),y
+    ora #%11110000
+    sta PF1
+    ; PF0 finished rendering
+    ; PF2 is fixed
+    lda #0
+    sta PF2
+    ; wait for first 8 PF pixels to finish
+    SLEEP 4
+
+    ; PF1 depends on wall state
+    lda (Vptr_Sec2Right),y
+    ora #%11110000
+    sta PF1
+
+    ; PF0 
+    ldx Vb_LeftWall
+    ;lda PF_WALL_STATE_0,x
+    lda #%11110000
+    sta PF0
+
+    iny
+    cpy #16
+    bne .lineLoop
+
+; --- ##########################
+; 16 Scanlines of Section1Bottom
+Section1Bottom: SUBROUTINE
+    ldy #0
+    ; cycle #68
+.lineLoop
+    ; set bg
+    lda #COL_BG_SOLID
+    ldx Vb_DrawDist
+    sta WSYNC
+    cpx #C_MAX_DRAW_DIST-3
+    bcc .solidbg
+    lda Vb_BGColOdd
+.solidbg:
+    sta COLUBK
+
+    ; PF0 
+    ;ldx Vb_LeftWall
+    ;lda PF_WALL_STATE_0,x
+    lda #%11110000
+    sta PF0
+    ; PF1 depends on wall state
+    lda (Vptr_Sec1Left),y
+    and #%11110000
+    sta PF1
+    ; PF0 finished rendering
+    ; PF2 is fixed
+    lda #0
+    sta PF2
+    ; wait for first 8 PF pixels to finish
+    SLEEP 4
+
+    ; PF1 depends on wall state
+    lda (Vptr_Sec1Right),y
+    and #%11110000
+    sta PF1
+
+    ; PF0 
+    ldx Vb_LeftWall
+    ;lda PF_WALL_STATE_0,x
+    lda #%11110000
+    sta PF0
+
+    iny
+    cpy #16
+    bne .lineLoop
+
 
     ; clear registers to prevent bleeding
     lda #2
