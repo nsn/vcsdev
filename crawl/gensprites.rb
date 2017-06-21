@@ -50,7 +50,7 @@ sprites.each { |sprite|
             opts[:height].times { |y|
                 currentLine = 0
                 W.times { |x|
-                    pixel = img[x,y]
+                    pixel = img[x,y+opts[:height]*frame]
                     v = (ChunkyPNG::Color::a(pixel) != opts[:blank])?1:0
                     currentLine = (currentLine << 1)
                     currentLine = currentLine | v
