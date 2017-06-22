@@ -263,6 +263,8 @@ Vptr_Sec3Left       ds 2
 Vptr_Sec3Right       ds 2
 ; MOB Pointer, 2 bytes
 Vptr_MOB         ds 2
+; compass pointer, 2 bytes
+Vptr_Compass     ds 2
 ; Wall states
 Vb_LeftWall      ds 1
 Vb_RightWall     ds 1
@@ -610,6 +612,14 @@ BackgroundColor: SUBROUTINE
 
     ; set MOB Pointer
     SET_POINTER Vptr_MOB, SKELETON_P0
+    ; set Compass Pointer depending on Vb_PlayerOrientation
+    ldx Vb_PlayerOrientation
+    lda CompassFrameTableHI
+    sta Vptr_Compass+1
+    lda CompassFrameTableLO,x
+    sta Vptr_Compass
+
+    ;SET_POINTER Vptr_Compass, COMPASS_F0
 
     rts ;--- GameState
 
@@ -627,6 +637,10 @@ DrawScreen:
 Section0Top: SUBROUTINE
     ldy #15
 .lineLoop
+    ; set P0 (compass) behaviour
+    lda #%00000101
+    sta NUSIZ0
+
     ; set bg
     lda #COL_BG_SOLID
     ldx Vb_DrawDist
@@ -637,20 +651,27 @@ Section0Top: SUBROUTINE
 .solidbg:
     sta COLUBK
 
+    ; load PF registers for left side
     lda (Vptr_Sec0Left),y      ; +5
     sta PF0                 ; +3
     lda #0                  ; +2
     sta PF1                 ; +3
-    sta PF2                 ; +3 (18)
+    sta PF2                 ; +3
+
+    ; load compass
+    lda (Vptr_Compass),y    ; +5
+    sta GRP0                ; +3 (34)
+
+    ; wait for beam to reach center 
+    ; minus compass width, minus sta cycles (~= cycle 40)
+    SLEEP 7
+
+    ; draw compass
+    sta RESP0
+
     ; wait for PF0 to finish drawing
-    SLEEP 12
+    ; SLEEP 4
     
-    ; TODO: PF1/2 stay 0, can be optimized 
-    lda #0                  ;
-    sta PF2                 ; +3 (8)
-    sta PF1                 ; +3 (8)
-    ; wait for P23 to finish drawing
-    SLEEP 6
     lda (Vptr_Sec0Right),y
     and #%11110000
     sta PF0
@@ -1049,6 +1070,16 @@ MoveWest: SUBROUTINE
 ;----------------------------
 
     echo "---- start data at ",(*)
+    ; compass frame address table
+    ; low bytes only
+CompassFrameTableHI:
+    .byte >(COMPASS)
+CompassFrameTableLO:
+    .byte <(COMPASS_F0) ; 00 -> facing east
+    .byte <(COMPASS_F1) ; 01 -> facing south
+    .byte <(COMPASS_F2) ; 10 -> facing west
+    .byte <(COMPASS_F3) ; 11 -> facing north
+
     ; wall state mask table
     ; index is draw distance
 WallStateMaskTable:
@@ -1172,6 +1203,7 @@ PF_WALL_STATE_2:
 
     ; sprites
     include "mobdata.inc"
+    include "compassdata.inc"
 
     echo "---- bytes left ",($fd00 - *)
 
