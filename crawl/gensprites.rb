@@ -51,7 +51,7 @@ sprites.each { |sprite|
                 currentLine = 0
                 W.times { |x|
                     pixel = img[x,y+opts[:height]*frame]
-                    v = (ChunkyPNG::Color::a(pixel) != opts[:blank])?1:0
+                    v = (ChunkyPNG::Color::a(pixel) == opts[:blank])?1:0
                     currentLine = (currentLine << 1)
                     currentLine = currentLine | v
                     #puts "%dx%d -> %d" % [x,y,v]
