@@ -47,6 +47,8 @@ COL_BG_SOLID = $0C
 ;COL_PF_SOLID = $08
 COL_PF_SOLID = $0C
 
+COL_COMPASS = $9A
+
 C_MAX_DRAW_DIST = 5
 
 ;--- end Constants
@@ -618,8 +620,12 @@ BackgroundColor: SUBROUTINE
     sta Vptr_Compass+1
     lda CompassFrameTableLO,x
     sta Vptr_Compass
+    ; set P0 (compass) behaviour
+    lda #%00000101
+    sta NUSIZ0
+    lda #COL_COMPASS
+    sta COLUP0
 
-    ;SET_POINTER Vptr_Compass, COMPASS_F0
 
     rts ;--- GameState
 
@@ -637,9 +643,7 @@ DrawScreen:
 Section0Top: SUBROUTINE
     ldy #15
 .lineLoop
-    ; set P0 (compass) behaviour
-    lda #%00000101
-    sta NUSIZ0
+BREAK:
 
     ; set bg
     lda #COL_BG_SOLID
