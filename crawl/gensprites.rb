@@ -9,7 +9,9 @@ opts = {
     :blank => ChunkyPNG::Color.from_hex("#000000"),
     :debug => false,
     :inverted => false,
-    :prefix => "SPRITE"
+    :prefix => "SPRITE",
+    :paddingtop => 0,
+    :paddingbottom => 0
 }
 
 OptionParser.new do |opt|
@@ -24,7 +26,10 @@ OptionParser.new do |opt|
     opt.on("-b", "--blank-color=val", ChunkyPNG::Color, "color to consider as blank (#%0), all other colors are considered filled (#%1), format: #rrggbb. default = #000") { |o| opts[:blank] = o }
     opt.on("-i", "--invert-output", FalseClass, "invert output - outputs the strips form the bottom up, useful if your line counter counts down instead of up") { |o| opts[:inverted] = true }
     opt.on("-p", "--prefixes=val", String, "label prefixes, comma separated") { |o| opts[:prefix] = o }
-    opt.on("-d", "--debug", FalseClass, "outputs some debug to stderr") { |o| opts[:debug] = true }
+    opt.on("-t", "--padding-top=val", Integer, "frame top padding in pixels, not affected by scale") { |o| opts[:paddingtop] = o }
+    opt.on("-b", "--padding-bottom=val", Integer, "frame bottom padding in pixels, not affected by scale") { |o| opts[:paddingbottom] = o }
+
+    #opt.on("-d", "--debug", FalseClass, "outputs some debug to stderr") { |o| opts[:debug] = true }
 end.parse!
 
 inputFile = ARGV.shift
@@ -54,9 +59,7 @@ sprites.each { |sprite|
                     v = (ChunkyPNG::Color::a(pixel) == opts[:blank])?1:0
                     currentLine = (currentLine << 1)
                     currentLine = currentLine | v
-                    #puts "%dx%d -> %d" % [x,y,v]
                 }
-                #puts "    .byte #%%%08b" % currentLine
                 currentPart.push(currentLine)
             }
             currentFrame.push(currentPart)
@@ -74,6 +77,9 @@ allSprites.each { |name, frames|
         puts "%s_F%d:" % [name, frameIndex]
         frame.each_with_index { |part, partIndex|
             puts "%s_F%d_%d:" % [name, frameIndex, partIndex]
+            opts[:paddingtop].times {
+                puts "    .byte #%%%08b" % 0
+            }
             if opts[:inverted] then 
                 part.reverse!
             end
@@ -82,10 +88,12 @@ allSprites.each { |name, frames|
                     puts "    .byte #%%%08b" % line
                 }
             }
+            opts[:paddingbottom].times {
+                puts "    .byte #%%%08b" % 0
+            }
         }
     }
 }
-
 
 
 

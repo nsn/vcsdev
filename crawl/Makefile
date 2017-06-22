@@ -7,7 +7,7 @@ include ${PATH}/Makefile.tpl
 
 .PHONY:
 compassdata.inc: sprites/compass.png 
-	$(RUBY) ./gensprites.rb -p COMPASS -f 4 -w 1 -h 8 sprites/compass.png > compassdata.inc
+	$(RUBY) ./gensprites.rb -p COMPASS -f 4 -w 1 -h 8 -t 4 -b 4 sprites/compass.png > compassdata.inc
 
 run: run-vcscrawl
 
