@@ -44,6 +44,7 @@ COL_BG_DARK = $E4
 COL_BG_LIGHT = $E8
 COL_BG_EMPTY = $00
 COL_BG_SOLID = $0C
+COL_BG_STATUSBAR = $08
 ;COL_PF_SOLID = $08
 COL_PF_SOLID = $0C
 
@@ -1006,6 +1007,26 @@ Section1Bottom: SUBROUTINE
     cpy #16
     bne .lineLoop
 
+; --- TODO: make cleaner cut betwenn section and status bar
+    lda #0 
+    sta WSYNC
+    sta PF1
+    sta PF2 
+    sta PF0
+    lda #COL_BG_STATUSBAR
+    sta COLUBK
+; --- ##########################
+; 55 lines of status bar
+
+StatusBar: SUBROUTINE
+    ldy #49
+.lineLoop:
+    sta WSYNC
+
+
+    dey 
+    bpl .lineLoop
+
 
     ; clear registers to prevent bleeding
     lda #2
@@ -1026,6 +1047,13 @@ Section1Bottom: SUBROUTINE
 ;----------------------------
 ; Overscan
 ;----------------------------
+; todo:
+;   lda #35
+;   sta TIM64T
+; Loop:
+;   lda INTIM
+;   bne Loop
+;   ; end of overscan
 OverScan:
     ; wait 30 scanline
     ldx #30
