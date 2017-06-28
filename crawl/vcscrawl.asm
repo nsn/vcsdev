@@ -505,7 +505,6 @@ CheckMovementValid:
     sta Vb_PlayerPosY
     jmp NoMovement
 Collision:
-    nop
 NoMovement:
 
 
@@ -558,19 +557,7 @@ CTS_Finalize:
 CTS_Done:
 
 
-    ; set playfield data pointers 
-    ; according to position in maze
-    ;SET_POINTER Vptr_Sec0Left, PF_1_0 
-    ;SET_POINTER Vptr_Sec0Right, PF_1_0
-    ;SET_POINTER Vptr_Sec1Left, PF_1_1 
-    ;SET_POINTER Vptr_Sec1Right, PF_1_1
-
-    ;SET_POINTER Vptr_Sec2Left, PF_1_1 
-    ;SET_POINTER Vptr_Sec2Right, PF_1_0
-
-    ;SET_POINTER Vptr_Sec3Left, PF_1_0 
-    ;SET_POINTER Vptr_Sec3Right, PF_1_0
-
+    ; set Section pointers
     M_SetSecPtr 0, Left, PF_1_0
     M_SetSecPtr 0, Right, PF_1_0
 
@@ -643,8 +630,6 @@ DrawScreen:
 Section0Top: SUBROUTINE
     ldy #15
 .lineLoop
-BREAK:
-
     ; set bg
     lda #COL_BG_SOLID
     ldx Vb_DrawDist
@@ -668,7 +653,7 @@ BREAK:
 
     ; wait for beam to reach center 
     ; minus compass width, minus sta cycles (~= cycle 40)
-    SLEEP 7
+    SLEEP 8
 
     ; draw compass
     sta RESP0
@@ -1102,15 +1087,15 @@ MovePtrHI:
     ; low bytes, index /w Vb_PlayerOrientation
     ; forward
 MoveForwardPtrLOTable:
-    .byte <(MoveEast)   ; 00 -> facing east
+    .byte <(MoveWest)   ; 00 -> facing east
     .byte <(MoveSouth)  ; 01 -> facing south
-    .byte <(MoveWest)   ; 10 -> facing west
+    .byte <(MoveEast)   ; 10 -> facing west
     .byte <(MoveNorth)  ; 11 -> facing north
     ; back
 MoveBackPtrLOTable:
-    .byte <(MoveWest)   ; 00 -> facing east
+    .byte <(MoveEast)   ; 00 -> facing east
     .byte <(MoveNorth)  ; 01 -> facing south
-    .byte <(MoveEast)   ; 10 -> facing west
+    .byte <(MoveWest)   ; 10 -> facing west
     .byte <(MoveSouth)  ; 11 -> facing north
     ; left
 MoveLeftPtrLOTable:
@@ -1208,6 +1193,7 @@ PF_WALL_STATE_2:
     ; sprites
     include "mobdata.inc"
     include "compassdata.inc"
+    include "digitsdata.inc"
 
     echo "---- bytes left ",($fd00 - *)
 
