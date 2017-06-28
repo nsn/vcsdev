@@ -1019,7 +1019,7 @@ Section1Bottom: SUBROUTINE
 ; 55 lines of status bar
 
 StatusBar: SUBROUTINE
-    ldy #49
+    ldy #50
 .lineLoop:
     sta WSYNC
 
@@ -1055,11 +1055,11 @@ StatusBar: SUBROUTINE
 ;   bne Loop
 ;   ; end of overscan
 OverScan:
-    ; wait 30 scanline
-    ldx #30
+    lda #35
+    sta TIM64T
+    ; calc stuff here
 OverScanLineWait:
-    sta WSYNC
-    dex
+    lda INTIM
     bne OverScanLineWait
     ; return
     rts
