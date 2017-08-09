@@ -236,6 +236,22 @@ CTS_{1}Loop:
     sta {3}
 
     ENDM ;--- M_SetDigitPtr
+    ;####################################################################
+
+
+    ;####################################################################
+    ; M_BuildDigitBfr Vb_tmp1, Vb_tmp3, Vb_tmp9, GRP0
+    MAC M_BuildDigitBfr 
+
+    lda ({1}),y
+    and #%11110000
+    sta {3}
+    lda ({2}),y
+    and #%00001111
+    ora {3}
+    sta {4} 
+
+    ENDM ;--- M_SetDigitPtr
 
 ;############################
 ; Bank1
@@ -1095,23 +1111,11 @@ StatusBar: SUBROUTINE
     sta WSYNC
 BREAK:
     ; hi part of player hp: P0
-    lda (Vb_tmp1),y
-    and #%11110000
-    sta Vb_tmp9
-    lda (Vb_tmp3),y
-    and #%00001111
-    ora Vb_tmp9
-    sta GRP0 
+    M_BuildDigitBfr Vb_tmp1, Vb_tmp3, Vb_tmp9, GRP0
     ; lo part of player hp: P1
-    lda (Vb_tmp5),y
-    and #%11110000
-    sta Vb_tmp9
-    lda (Vb_tmp7),y
-    and #%00001111
-    ora Vb_tmp9
-    sta GRP1 
-
-;    SLEEP 10
+    M_BuildDigitBfr Vb_tmp5, Vb_tmp7, Vb_tmp9, GRP1
+   
+    SLEEP 4
     sta RESP0
     SLEEP 2
     sta RESP1
