@@ -209,6 +209,33 @@ CTS_{1}Loop:
     ;store HI byte
     sta Vptr_Sec{1}{2}
     ENDM ;--- M_SetSecPtr 
+    ;####################################################################
+
+
+    ;####################################################################
+    ; M_SetDigitPtr Vb_PlayerHPHi, Vb_tmp1, Vb_tmp3
+    MAC M_SetDigitPtr
+    
+    ; HI nibble -> first digit
+    lda {1}
+    and #%11110000
+    ror
+    ror
+    ror
+    ror
+    tax
+    ; load digit memory address from table
+    lda DigitsFrameTable,x
+    ; store into lo part of pointer
+    sta {2}
+    ; 2nd digit
+    lda {1}
+    and #%00001111
+    tax
+    lda DigitsFrameTable,x
+    sta {3}
+
+    ENDM ;--- M_SetDigitPtr
 
 ;############################
 ; Bank1
@@ -226,11 +253,19 @@ Vb_tmp3                ds 1
 Vb_tmp4                ds 1
 Vb_tmp5                ds 1
 Vb_tmp6                ds 1
+Vb_tmp7                ds 1
+Vb_tmp8                ds 1
+Vb_tmp9                ds 1
 ; shadow registers
 Vb_SWCHA_Shadow        ds 1
 ; player data
 Vb_PlayerPosX        ds 1
 Vb_PlayerPosY        ds 1
+; in BCF
+Vb_PlayerHPLo        ds 1
+Vb_PlayerHPHi        ds 1
+Vb_PlayerHPMaxLo     ds 1
+Vb_PlayerHPMaxHi     ds 1
 ; 0 0  E
 ; 0 1  S
 ; 1 0  W
@@ -608,11 +643,14 @@ BackgroundColor: SUBROUTINE
     sta Vptr_Compass+1
     lda CompassFrameTableLO,x
     sta Vptr_Compass
-    ; set P0 (compass) behaviour
-    lda #%00000101
-    sta NUSIZ0
-    lda #COL_COMPASS
-    sta COLUP0
+    ; set player HP
+    lda #$99
+    sta Vb_PlayerHPMaxLo
+    sta Vb_PlayerHPMaxHi
+    lda #%00110100
+    sta Vb_PlayerHPLo
+    lda #%00010010
+    sta Vb_PlayerHPHi
 
 
     rts ;--- GameState
@@ -621,6 +659,11 @@ BackgroundColor: SUBROUTINE
 ; Draw visible scanlines
 ;----------------------------
 DrawScreen:
+    ; set P0 (compass) behaviour
+    lda #%00000101
+    sta NUSIZ0
+    lda #COL_COMPASS
+    sta COLUP0
     ; wait until vertical blank period is over
     lda INTIM
     bne DrawScreen
@@ -1019,13 +1062,63 @@ Section1Bottom: SUBROUTINE
 ; 55 lines of status bar
 
 StatusBar: SUBROUTINE
-    ldy #50
-.lineLoop:
-    sta WSYNC
+    ; set up TIA behaviour
+    lda #$1E
+    sta COLUP0
+    sta COLUP1
+    lda #0
+    sta VDELP0
+    sta VDELP1
+    lda #0
+    sta NUSIZ0
+    sta NUSIZ1
+    lda #0
+    sta REFP0
+    sta REFP1
 
+    ; set up digit display buffers
+    clc
+    lda #>(DIGITS)
+    ; hi part of pointer
+    sta Vb_tmp2
+    sta Vb_tmp4
+    sta Vb_tmp6
+    sta Vb_tmp8
+    ; digits: hi byte of player hp
+    M_SetDigitPtr Vb_PlayerHPHi, Vb_tmp1, Vb_tmp3
+    ; digits: low bye of player hp
+    M_SetDigitPtr Vb_PlayerHPLo, Vb_tmp5, Vb_tmp7
+
+    ; digit height: 6px
+    ldy #5
+.hpLoop:
+    sta WSYNC
+BREAK:
+    ; hi part of player hp: P0
+    lda (Vb_tmp1),y
+    and #%11110000
+    sta Vb_tmp9
+    lda (Vb_tmp3),y
+    and #%00001111
+    ora Vb_tmp9
+    sta GRP0 
+    ; lo part of player hp: P1
+    lda (Vb_tmp5),y
+    and #%11110000
+    sta Vb_tmp9
+    lda (Vb_tmp7),y
+    and #%00001111
+    ora Vb_tmp9
+    sta GRP1 
+
+;    SLEEP 10
+    sta RESP0
+    SLEEP 2
+    sta RESP1
+    
 
     dey 
-    bpl .lineLoop
+    bpl .hpLoop
 
 
     ; clear registers to prevent bleeding
@@ -1042,6 +1135,8 @@ StatusBar: SUBROUTINE
     sty ENAM0
     sty ENAM1
     sty ENABL
+    sty VDELP0
+    sty VDELP1
     rts ; DrawScreen
 
 ;----------------------------
@@ -1087,6 +1182,19 @@ MoveWest: SUBROUTINE
 ;----------------------------
 
     echo "---- start data at ",(*)
+
+DigitsFrameTable:
+    .byte <(DIGITS_F0)  ; 00000000 -> 0
+    .byte <(DIGITS_F1)  ; 00000001 -> 1
+    .byte <(DIGITS_F2)  ; 00000010 -> 2
+    .byte <(DIGITS_F3)  ; 00000011 -> 3
+    .byte <(DIGITS_F4)  ; 00000100 -> 4
+    .byte <(DIGITS_F5)  ; 00000101 -> 5
+    .byte <(DIGITS_F6)  ; 00000110 -> 6
+    .byte <(DIGITS_F7)  ; 00000111 -> 7
+    .byte <(DIGITS_F8)  ; 00001000 -> 8
+    .byte <(DIGITS_F9)  ; 00001001 -> 9
+
     ; compass frame address table
     ; low bytes only
 CompassFrameTableHI:
@@ -1138,20 +1246,6 @@ MoveRightPtrLOTable:
     .byte <(MoveNorth)   ; 10 -> facing west
     .byte <(MoveEast)    ; 11 -> facing north
 
-
-    ; walk subroutine pointer table
-    ; TODO: remove!
-WalkingTableHI:
-    .byte >(MoveWest)
-    .byte >(MoveSouth)
-    .byte >(MoveEast)
-    .byte >(MoveNorth)
-
-WalkingTableLO:
-    .byte <(MoveWest)
-    .byte <(MoveSouth)
-    .byte <(MoveEast)
-    .byte <(MoveNorth)
 
     ; playfield data
     include "pfdata.inc"

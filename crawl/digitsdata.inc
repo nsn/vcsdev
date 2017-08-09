@@ -9,14 +9,14 @@ DIGITS_F0_0:
 DIGITS_F1:
 DIGITS_F1_0:
     .byte #%11101110
-    .byte #%01000110
+    .byte #%01000100
     .byte #%01000100
     .byte #%11001100
     .byte #%01000100
 DIGITS_F2:
 DIGITS_F2_0:
     .byte #%11101110
-    .byte #%10001010
+    .byte #%10001000
     .byte #%01000110
     .byte #%00100010
     .byte #%11001100
