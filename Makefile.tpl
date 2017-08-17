@@ -6,7 +6,7 @@ SRC=$(shell find . -maxdepth 1  -name \*.asm)
 OBJECTS=${SRC:.asm=.bin}
 
 .PHONY:
-all: $(OBJECTS)
+all: $(OBJECTS) 
 	@echo "made $?"
 
 %.bin: %.asm
@@ -22,7 +22,7 @@ debug-%: %.bin
 
 .PHONY:
 clean:
-	rm -f $(OBJECTS) $(OBJECTS:.bin=.txt) $(OBJECTS:.bin=.sym) depfile
+	rm -f $(OBJECTS) $(OBJECTS:.bin=.txt) $(OBJECTS:.bin=.sym) depfile $(GENERATED)
 
 depfile: $(SRC)
 	$(shell sh $(PATH)/depgen.sh $(SRC) > depfile)

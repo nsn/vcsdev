@@ -1094,6 +1094,7 @@ StatusBar: SUBROUTINE
 
     ; set up digit display buffers
     clc
+HERE:
     lda #>(DIGITS)
     ; hi part of pointer
     sta Vb_tmp2
@@ -1117,9 +1118,7 @@ BREAK:
    
     SLEEP 4
     sta RESP0
-    SLEEP 2
     sta RESP1
-    
 
     dey 
     bpl .hpLoop
@@ -1250,11 +1249,6 @@ MoveRightPtrLOTable:
     .byte <(MoveNorth)   ; 10 -> facing west
     .byte <(MoveEast)    ; 11 -> facing north
 
-
-    ; playfield data
-    include "pfdata.inc"
-
-
 PF_WALL_STATE_0:
         .byte #%00000000  ; 0000 
         .byte #%00000000  ; 0001 
@@ -1310,15 +1304,14 @@ PF_WALL_STATE_2:
         .byte #%00001111  ; 1111 
 
 
-
-
-
-
-
-
     ; sprites
+    ; playfield data
+    include "pfdata.inc"
     include "mobdata.inc"
     include "compassdata.inc"
+    ; digits, need to be on same page, 60 bytes 
+    ; 0xFD00 - 0x3c = 0xFCC4 
+    ORG $FCC4
     include "digitsdata.inc"
 
     echo "---- bytes left ",($fd00 - *)
