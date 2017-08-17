@@ -60,8 +60,8 @@ C_MAX_DRAW_DIST = 5
     ;####################################################################
     ; "walks" a step in the direction defined by Vb_PlayerOrientation
     ; basically just calls the MoveEast/South/West/North subroutine
-    ; pointed to by Vb_tmp4 and Vb_tmp5, then returns to {1}
-    ; expects Vb_tmp4 and Vb_tmp5 to point to the appropriate subroutine
+    ; pointed to by Vb_tmp03 and Vb_tmp04, then returns to {1}
+    ; expects Vb_tmp03 and Vb_tmp04 to point to the appropriate subroutine
     MAC M_CallWalkStepReturn
 
 .TARGET SET {1}
@@ -71,7 +71,7 @@ C_MAX_DRAW_DIST = 5
     lda #<(.TARGET-1)
     pha
     ; jump to walk* subroutine
-    jmp (Vb_tmp4)
+    jmp (Vb_tmp03)
 
     ENDM ;--- M_CallWalkStepReturn
     ;####################################################################
@@ -82,7 +82,7 @@ C_MAX_DRAW_DIST = 5
     ; calls appropriate Move* subroutines 
     ; destroys 
     ; x
-    ; Vb_tmp4 and 5
+    ; Vb_tmp03 and 5
     MAC M_Move
 
 .RETURNTARGET SET {2}
@@ -95,11 +95,11 @@ C_MAX_DRAW_DIST = 5
     ; load tmp4 and tmp5
     ldx Vb_PlayerOrientation
     lda MovePtrHI
-    sta Vb_tmp5
+    sta Vb_tmp04
     lda Move{1}PtrLOTable,x
-    sta Vb_tmp4
+    sta Vb_tmp03
     ; execute jump
-    jmp (Vb_tmp4)
+    jmp (Vb_tmp03)
 
     ENDM ;--- M_Move
     ;####################################################################
@@ -129,26 +129,26 @@ C_MAX_DRAW_DIST = 5
 
     
     ;####################################################################
-    ; load PosX/Y into Vb_tmp1/2
+    ; load PosX/Y into Vb_tmp00/2
     MAC M_CopyPos2Tmp
 
     lda Vb_PlayerPosX
-    sta Vb_tmp1
+    sta Vb_tmp00
     lda Vb_PlayerPosY
-    sta Vb_tmp2
+    sta Vb_tmp01
 
     ENDM ;--- M_CopyPos2Tmp
     ;####################################################################
 
 
     ;####################################################################
-    ; calculate wall state, uses Vb_tmp6 and Vb_tmp5
+    ; calculate wall state, uses Vb_tmp05 and Vb_tmp04
     ; param {1} Left/Right
     ; param {2} label to break to
     MAC M_CTS_LOOP
     ; initialize variables
     lda #C_MAX_DRAW_DIST-1
-    sta Vb_tmp6
+    sta Vb_tmp05
     lda #0
     sta Vb_{1}Wall
     ; init position
@@ -159,18 +159,18 @@ CTS_{1}Loop:
     jsr TestTile
     ; after TestTile: Z == A = 1 if solid
     ; store tile state in tmp5
-    sta Vb_tmp5 
+    sta Vb_tmp04 
     ; load wall state
     lda Vb_{1}Wall
     ; shift left
     clc
     asl
     ; set lsb
-    ora Vb_tmp5
+    ora Vb_tmp04
     ; store new sate
     sta Vb_{1}Wall
     ; dec loop var, break if 0
-    dec Vb_tmp6
+    dec Vb_tmp05
     beq {2}
     ; != 0, move forward
     M_Move Forward, CTS_{1}Loop
@@ -213,7 +213,7 @@ CTS_{1}Loop:
 
 
     ;####################################################################
-    ; M_SetDigitPtr Vb_PlayerHPHi, Vb_tmp1, Vb_tmp3
+    ; M_SetDigitPtr Vb_PlayerHPHi, Vb_tmp00, Vb_tmp02
     MAC M_SetDigitPtr
     
     ; HI nibble -> first digit
@@ -240,7 +240,7 @@ CTS_{1}Loop:
 
 
     ;####################################################################
-    ; M_BuildDigitBfr Vb_tmp1, Vb_tmp3, Vb_tmp9, GRP0
+    ; M_BuildDigitBfr Vb_tmp00, Vb_tmp02, Vb_tmp08, GRP0
     MAC M_BuildDigitBfr 
 
     lda ({1}),y
@@ -263,15 +263,15 @@ CTS_{1}Loop:
     SEG.U variables
     ORG $80
 
-Vb_tmp1                ds 1
-Vb_tmp2                ds 1
-Vb_tmp3                ds 1
-Vb_tmp4                ds 1
-Vb_tmp5                ds 1
-Vb_tmp6                ds 1
-Vb_tmp7                ds 1
-Vb_tmp8                ds 1
-Vb_tmp9                ds 1
+Vb_tmp00                ds 1
+Vb_tmp01                ds 1
+Vb_tmp02                ds 1
+Vb_tmp03                ds 1
+Vb_tmp04                ds 1
+Vb_tmp05                ds 1
+Vb_tmp06                ds 1
+Vb_tmp07                ds 1
+Vb_tmp08                ds 1
 ; shadow registers
 Vb_SWCHA_Shadow        ds 1
 ; player data
@@ -430,44 +430,44 @@ VerticalBlank:
 ;----------------------------
 ; test tile in maze
 ; input: 
-;   Vb_tmp1 - playerX
-;   Vb_tmp2 - playerY
+;   Vb_tmp00 - playerX
+;   Vb_tmp01 - playerY
 ; output:
 ;   Z flag - set if tile is solid, unset otherwise
 ; destroys:
 ;   X, Y
-;   Vb_tmp3
+;   Vb_tmp02
 ;----------------------------
 TestTile: SUBROUTINE
     ; get byte for left corridor walls
     ; - calculate quadrant offset (0-F)  
-    lda Vb_tmp1
+    lda Vb_tmp00
     lsr
     lsr
     lsr 
-    sta Vb_tmp3
-    lda Vb_tmp2
+    sta Vb_tmp02
+    lda Vb_tmp01
     lsr
     and #%11111100
     clc
-    adc Vb_tmp3
+    adc Vb_tmp02
     ; store quadrant offset in x
     tax
     ; load value of quadrant pointer into a
     lda Vb_MazeAA,x
 
     ; store it
-    sta Vb_tmp3
+    sta Vb_tmp02
     ; - add y offset
-    lda Vb_tmp2
+    lda Vb_tmp01
     and #%00000111
     clc
-    adc Vb_tmp3
+    adc Vb_tmp02
     ; store in x
     tax
     ; load maze value and
     ; shift so that Vb_PlayerPosX is at lsb
-    lda Vb_tmp1
+    lda Vb_tmp00
     and #%00000111
     tay
     lda MAZEDATA_0,x
@@ -522,7 +522,7 @@ Check4Movement:
     lda #%00000011
     and Vb_PlayerOrientation
     sta Vb_PlayerOrientation
-    ; load PosX/Y into Vb_tmp1/2
+    ; load PosX/Y into Vb_tmp00/2
     M_CopyPos2Tmp
 
 ; check if down was pressed
@@ -550,10 +550,10 @@ CheckMovementValid:
     jsr TestTile
     bne Collision
     ; TODO: implement collision sound
-    ; copy Vb_tmp1/2 back to PosX/Y
-    lda Vb_tmp1
+    ; copy Vb_tmp00/2 back to PosX/Y
+    lda Vb_tmp00
     sta Vb_PlayerPosX
-    lda Vb_tmp2
+    lda Vb_tmp01
     sta Vb_PlayerPosY
     jmp NoMovement
 Collision:
@@ -1097,14 +1097,14 @@ StatusBar: SUBROUTINE
 HERE:
     lda #>(DIGITS)
     ; hi part of pointer
-    sta Vb_tmp2
-    sta Vb_tmp4
-    sta Vb_tmp6
-    sta Vb_tmp8
+    sta Vb_tmp01
+    sta Vb_tmp03
+    sta Vb_tmp05
+    sta Vb_tmp07
     ; digits: hi byte of player hp
-    M_SetDigitPtr Vb_PlayerHPHi, Vb_tmp1, Vb_tmp3
+    M_SetDigitPtr Vb_PlayerHPHi, Vb_tmp00, Vb_tmp02
     ; digits: low bye of player hp
-    M_SetDigitPtr Vb_PlayerHPLo, Vb_tmp5, Vb_tmp7
+    M_SetDigitPtr Vb_PlayerHPLo, Vb_tmp04, Vb_tmp06
 
     ; digit height: 6px
     ldy #5
@@ -1112,9 +1112,9 @@ HERE:
     sta WSYNC
 BREAK:
     ; hi part of player hp: P0
-    M_BuildDigitBfr Vb_tmp1, Vb_tmp3, Vb_tmp9, GRP0
+    M_BuildDigitBfr Vb_tmp00, Vb_tmp02, Vb_tmp08, GRP0
     ; lo part of player hp: P1
-    M_BuildDigitBfr Vb_tmp5, Vb_tmp7, Vb_tmp9, GRP1
+    M_BuildDigitBfr Vb_tmp04, Vb_tmp06, Vb_tmp08, GRP1
    
     SLEEP 4
     sta RESP0
@@ -1166,18 +1166,18 @@ OverScanLineWait:
 ;----------------------------
 ; Walking subroutines
 ;----------------------------
-; inc/dec Vb_tmp1 (== XCoord) or Vb_tmp2 (==YCoord)
+; inc/dec Vb_tmp00 (== XCoord) or Vb_tmp01 (==YCoord)
 MoveNorth: SUBROUTINE
-    dec Vb_tmp2
+    dec Vb_tmp01
     rts
 MoveEast: SUBROUTINE
-    dec Vb_tmp1
+    dec Vb_tmp00
     rts
 MoveSouth: SUBROUTINE
-    inc Vb_tmp2
+    inc Vb_tmp01
     rts
 MoveWest: SUBROUTINE
-    inc Vb_tmp1
+    inc Vb_tmp00
     rts
 
 ;----------------------------
