@@ -272,6 +272,17 @@ Vb_tmp05                ds 1
 Vb_tmp06                ds 1
 Vb_tmp07                ds 1
 Vb_tmp08                ds 1
+Vb_tmp09                ds 1
+Vb_tmp10                ds 1
+Vb_tmp11                ds 1
+Vb_tmp12                ds 1
+Vb_tmp13                ds 1
+Vb_tmp14                ds 1
+Vb_tmp15                ds 1
+Vb_tmp16                ds 1
+Vb_tmp17                ds 1
+Vb_tmp18                ds 1
+Vb_tmp19                ds 1
 ; shadow registers
 Vb_SWCHA_Shadow        ds 1
 ; player data
@@ -1311,7 +1322,7 @@ PF_WALL_STATE_2:
     include "compassdata.inc"
     ; digits, need to be on same page, 60 bytes 
     ; 0xFD00 - 0x3c = 0xFCC4 
-    ORG $FCC4
+    ORG ($FD00 - $3C)
     include "digitsdata.inc"
 
     echo "---- bytes left ",($fd00 - *)
