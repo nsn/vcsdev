@@ -58,6 +58,45 @@ C_MAX_DRAW_DIST = 5
 ; Macros   
 ;----------------------------
     ;####################################################################
+    ; loads a maze row for x/y coords into A
+    ;
+    ; M_LoadMapQuadrantRow <X> <Y> <TMP>
+    MAC M_LoadMapQuadrantRow
+    
+    ; calc quadrant pointer (Vb_MazeXX) offset (0-F)
+    ; quadrant_offset = quadrant_x + quadrant_y * 
+    ; a quadrant is 8 tiles wide, the maze is 4x4 quadrants 
+    ; quadrant_x = player_x/8
+    ; quadrant_y = player_y/8
+    ; offset = player_x/8 + (player_y*4)/8
+    ; --> offset = px/8 + py/2
+
+    lda {1}           ; A = player_x
+    lsr
+    lsr
+    lsr               ; A = player_x/8
+    sta {3}           ; {3} = A
+    lda {2}           ; A = player_y          
+    lsr               ; A = player_Y/2
+    and #%11111100    ; erase 2 lowest bits, rounds down, quadrants are not divisible
+    clc
+    adc {3}           ; A = px/8 + py/2
+    tax               ; store offset into X
+    lda Vb_MazeAA,x   ; load maze offset
+    sta {3}           ; store it in tmp var
+    lda {2}           ; load py
+    and #%00000111    ; lower 3 bits determine row
+    clc
+    adc {3}           ; offset + row
+    tax               ; X = offset + row
+
+    lda MAZEDATA_0,x
+
+    ENDM ;--- M_LoadMapQuadrant
+
+
+    ;####################################################################
+    ;####################################################################
     ; "walks" a step in the direction defined by Vb_PlayerOrientation
     ; basically just calls the MoveEast/South/West/North subroutine
     ; pointed to by Vb_tmp03 and Vb_tmp04, then returns to {1}
@@ -1105,7 +1144,6 @@ StatusBar: SUBROUTINE
 
     ; set up digit display buffers
     clc
-HERE:
     lda #>(DIGITS)
     ; hi part of pointer
     sta Vb_tmp01
@@ -1117,11 +1155,11 @@ HERE:
     ; digits: low bye of player hp
     M_SetDigitPtr Vb_PlayerHPLo, Vb_tmp04, Vb_tmp06
 
+; ### HP Display
     ; digit height: 6px
     ldy #5
 .hpLoop:
     sta WSYNC
-BREAK:
     ; hi part of player hp: P0
     M_BuildDigitBfr Vb_tmp00, Vb_tmp02, Vb_tmp08, GRP0
     ; lo part of player hp: P1
@@ -1134,7 +1172,22 @@ BREAK:
     dey 
     bpl .hpLoop
 
+; ### clear
+    lda #0 
+    sta GRP0
+    sta GRP1
 
+; ### MiniMap
+    ; height: 8x3 px
+    ldy #24
+.MiniMapLoop:
+    sta WSYNC
+
+    M_LoadMapQuadrantRow Vb_PlayerPosX, Vb_PlayerPosY, Vb_tmp00
+
+    dey
+    bne .MiniMapLoop
+HERE:
     ; clear registers to prevent bleeding
     lda #2
     sta WSYNC   ; finish scanline
@@ -1314,23 +1367,25 @@ PF_WALL_STATE_2:
         .byte #%00000000  ; 1110 
         .byte #%00001111  ; 1111 
 
+POS_END_CODE EQM *
 
     ; sprites
     ; playfield data
     include "pfdata.inc"
     include "mobdata.inc"
+DATA_COMPASS ALIGN 256
+    ; compass, needs to be on one page, 64 bytes
     include "compassdata.inc"
     ; digits, need to be on same page, 60 bytes 
-    ; 0xFD00 - 0x3c = 0xFCC4 
-    ORG ($FD00 - $3C)
     include "digitsdata.inc"
 
-    echo "---- bytes left ",($fd00 - *)
-
     ; maze data needs to be page aligned...
-    ORG $FD00
+    ;ORG $FD00
+DATA_MAZE ALIGN 256
     include "mazedata.inc"
 
+    echo "---- bytes left ",($fffc - *)
+    ;echo "---- reset gap ",($fffc - *)
 ;----------------------------
 ; Reset/Break 
 ;----------------------------
