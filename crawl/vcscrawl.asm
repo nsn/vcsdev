@@ -58,10 +58,11 @@ C_MAX_DRAW_DIST = 5
 ; Macros   
 ;----------------------------
     ;####################################################################
-    ; loads a maze row for x/y coords into A
+    ; loads the maze quadrant offset for x/y coords into a
     ;
     ; M_LoadMapQuadrantRow <X> <Y> <TMP>
-    MAC M_LoadMapQuadrantRow
+    ; destroys <TMP>
+    MAC M_LoadMapQuadrant
     
     ; calc quadrant pointer (Vb_MazeXX) offset (0-F)
     ; quadrant_offset = quadrant_x + quadrant_y * 
@@ -81,6 +82,34 @@ C_MAX_DRAW_DIST = 5
     and #%11111100    ; erase 2 lowest bits, rounds down, quadrants are not divisible
     clc
     adc {3}           ; A = px/8 + py/2
+
+    ENDM ;--- M_LoadMapQuadrant
+
+    ;####################################################################
+    ; loads a maze row for x/y coords into A
+    ;
+    ; M_LoadMapQuadrantRow <X> <Y> <TMP>
+    MAC M_LoadMapQuadrantRow
+   
+    ; calc quadrant pointer (Vb_MazeXX) offset (0-F)
+    ; quadrant_offset = quadrant_x + quadrant_y * 
+    ; a quadrant is 8 tiles wide, the maze is 4x4 quadrants 
+    ; quadrant_x = player_x/8
+    ; quadrant_y = player_y/8
+    ; offset = player_x/8 + (player_y*4)/8
+    ; --> offset = px/8 + py/2
+
+    lda {1}           ; A = player_x
+    lsr
+    lsr
+    lsr               ; A = player_x/8
+    sta {3}           ; {3} = A
+    lda {2}           ; A = player_y          
+    lsr               ; A = player_Y/2
+    and #%11111100    ; erase 2 lowest bits, rounds down, quadrants are not divisible
+    clc
+    adc {3}           ; A = px/8 + py/2
+
     tax               ; store offset into X
     lda Vb_MazeAA,x   ; load maze offset
     sta {3}           ; store it in tmp var
@@ -92,7 +121,7 @@ C_MAX_DRAW_DIST = 5
 
     lda MAZEDATA_0,x
 
-    ENDM ;--- M_LoadMapQuadrant
+    ENDM ;--- M_LoadMapQuadrantRow
 
 
     ;####################################################################
@@ -1178,16 +1207,26 @@ StatusBar: SUBROUTINE
     sta GRP1
 
 ; ### MiniMap
-    ; height: 8x3 px
+    ; set tia behaviour
+    ;lda #5
+    ;sta NUSIZ0
+    ; load quadrant offset into x
+    M_LoadMapQuadrant Vb_PlayerPosX, Vb_PlayerPosY, Vb_tmp00
+    tax
     ldy #24
 .MiniMapLoop:
     sta WSYNC
 
-    M_LoadMapQuadrantRow Vb_PlayerPosX, Vb_PlayerPosY, Vb_tmp00
-
+    lda Vb_MazeAA,x
+    sta GRP0
+    ;sta RESP0
+    
+    ; inc maze data index
+    ;inx
+    ; dec loop var
     dey
     bne .MiniMapLoop
-HERE:
+
     ; clear registers to prevent bleeding
     lda #2
     sta WSYNC   ; finish scanline
@@ -1370,14 +1409,14 @@ PF_WALL_STATE_2:
 POS_END_CODE EQM *
 
     ; sprites
-    ; playfield data
-    include "pfdata.inc"
     include "mobdata.inc"
 DATA_COMPASS ALIGN 256
     ; compass, needs to be on one page, 64 bytes
     include "compassdata.inc"
     ; digits, need to be on same page, 60 bytes 
     include "digitsdata.inc"
+    ; playfield data, 64 bytes
+    include "pfdata.inc"
 
     ; maze data needs to be page aligned...
     ;ORG $FD00
