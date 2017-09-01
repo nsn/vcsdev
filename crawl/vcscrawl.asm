@@ -477,8 +477,11 @@ InitMaze:
 ;----------------------------
 MainLoop:
     jsr VerticalBlank
+BREAK1
     jsr GameState
+BREAK2
     jsr DrawScreen
+BREAK3
     jsr OverScan
     jmp MainLoop ; loop forever
 
@@ -1243,6 +1246,8 @@ StatusBar: SUBROUTINE
     sty ENABL
     sty VDELP0
     sty VDELP1
+HERE:
+    NOP ; remove
     rts ; DrawScreen
 
 ;----------------------------
@@ -1267,6 +1272,11 @@ OverScanLineWait:
 
 
 ;----------------------------
+; Data
+;----------------------------
+DATA_Start ALIGN 256
+    echo "---- start data at ",(*)
+;----------------------------
 ; Walking subroutines
 ;----------------------------
 ; inc/dec Vb_tmp00 (== XCoord) or Vb_tmp01 (==YCoord)
@@ -1283,12 +1293,7 @@ MoveWest: SUBROUTINE
     inc Vb_tmp00
     rts
 
-;----------------------------
-; Data
-;----------------------------
-
-    echo "---- start data at ",(*)
-
+; digit frames - 10 bytes
 DigitsFrameTable:
     .byte <(DIGITS_F0)  ; 00000000 -> 0
     .byte <(DIGITS_F1)  ; 00000001 -> 1
@@ -1302,6 +1307,7 @@ DigitsFrameTable:
     .byte <(DIGITS_F9)  ; 00001001 -> 9
 
     ; compass frame address table
+    ; 5 bytes = 15
     ; low bytes only
 CompassFrameTableHI:
     .byte >(COMPASS)
@@ -1312,6 +1318,7 @@ CompassFrameTableLO:
     .byte <(COMPASS_F3) ; 11 -> facing north
 
     ; wall state mask table
+    ; 6 bytes = 21
     ; index is draw distance
 WallStateMaskTable:
     .byte #%00000000    ; DrawDist = 0, should never happen
@@ -1323,6 +1330,7 @@ WallStateMaskTable:
 
 
     ; movement soubroutine pointer table
+    ; 17 bytes = 38
     ; all Move* subroutines pointers share a single HI byte
 MovePtrHI:
     .byte >(MoveNorth)
@@ -1352,6 +1360,8 @@ MoveRightPtrLOTable:
     .byte <(MoveNorth)   ; 10 -> facing west
     .byte <(MoveEast)    ; 11 -> facing north
 
+
+DATA_WallStates ALIGN 256
 PF_WALL_STATE_0:
         .byte #%00000000  ; 0000 
         .byte #%00000000  ; 0001 
@@ -1406,9 +1416,9 @@ PF_WALL_STATE_2:
         .byte #%00000000  ; 1110 
         .byte #%00001111  ; 1111 
 
-POS_END_CODE EQM *
 
     ; sprites
+DATA_MOBS ALIGN 256
     include "mobdata.inc"
 DATA_COMPASS ALIGN 256
     ; compass, needs to be on one page, 64 bytes
