@@ -477,11 +477,8 @@ InitMaze:
 ;----------------------------
 MainLoop:
     jsr VerticalBlank
-BREAK1
     jsr GameState
-BREAK2
     jsr DrawScreen
-BREAK3
     jsr OverScan
     jmp MainLoop ; loop forever
 
@@ -1246,8 +1243,6 @@ StatusBar: SUBROUTINE
     sty ENABL
     sty VDELP0
     sty VDELP1
-HERE:
-    NOP ; remove
     rts ; DrawScreen
 
 ;----------------------------
