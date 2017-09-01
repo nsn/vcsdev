@@ -1208,21 +1208,32 @@ StatusBar: SUBROUTINE
 
 ; ### MiniMap
     ; set tia behaviour
-    ;lda #5
-    ;sta NUSIZ0
+    ; player gfx size x3
+    lda #5
+    sta NUSIZ0
     ; load quadrant offset into x
     M_LoadMapQuadrant Vb_PlayerPosX, Vb_PlayerPosY, Vb_tmp00
     tax
-    ldy #24
+    ; tmp01: minimap height multipliet
+    lda #3
+    sta Vb_tmp01
+    ; scanlines
+    ldy #(8*3)
+HERE:
 .MiniMapLoop:
     sta WSYNC
 
-    lda Vb_MazeAA,x
+    lda MAZEDATA_0,x
     sta GRP0
-    ;sta RESP0
+    sta RESP0
     
     ; inc maze data index
-    ;inx
+    dec Vb_tmp01
+    bne .SameTile
+    inx
+    lda #3
+    sta Vb_tmp01
+.SameTile:
     ; dec loop var
     dey
     bne .MiniMapLoop
