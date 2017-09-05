@@ -50,6 +50,9 @@ COL_PF_SOLID = $0C
 
 COL_COMPASS = $9A
 
+COL_MAP_MAZE = $E6
+COL_MAP_DOT = $38 
+
 C_MAX_DRAW_DIST = 5
 
 ;--- end Constants
@@ -1208,25 +1211,59 @@ StatusBar: SUBROUTINE
 
 ; ### MiniMap
     ; set tia behaviour
+    ; colors
+    lda #COL_MAP_MAZE
+    sta COLUP0
+    lda #COL_MAP_DOT
+    sta COLUP1
+
     ; player gfx size x3
     lda #5
     sta NUSIZ0
+    sta NUSIZ1
+    ; tmp01: minimap height multiplier
+    lda #3
+    sta Vb_tmp01
+    ; tmp02: player dot gfx depending on player X offset
+    lda Vb_PlayerPosX
+    and #%00000111
+    tax
+    lda MINIMAP_PLAYER_X,x
+    sta Vb_tmp02
+    ; tmp03: player Y offset
+    lda Vb_PlayerPosY
+    and #%00000111
+    sta Vb_tmp03
     ; load quadrant offset into x
     M_LoadMapQuadrant Vb_PlayerPosX, Vb_PlayerPosY, Vb_tmp00
     tax
-    ; tmp01: minimap height multipliet
-    lda #3
-    sta Vb_tmp01
     ; scanlines
     ldy #(8*3)
-HERE:
 .MiniMapLoop:
     sta WSYNC
 
+    sta RESP0
+    sta RESP1
+
+    ; maze
     lda MAZEDATA_0,x
     sta GRP0
-    sta RESP0
-    
+
+    ; player dot
+    cpx Vb_tmp03
+    bne .NoDot
+
+    lda Vb_tmp02    ; 3
+    sta GRP1        ; 3
+    jmp .DotDone    ; 3 = 9
+.NoDot:
+    lda #0          ; 2
+    sta GRP1        ; 3 
+    SLEEP 3         ; 3
+.DotDone:
+
+   
+
     ; inc maze data index
     dec Vb_tmp01
     bne .SameTile
@@ -1422,6 +1459,15 @@ PF_WALL_STATE_2:
         .byte #%00000000  ; 1110 
         .byte #%00001111  ; 1111 
 
+MINIMAP_PLAYER_X:
+        .byte #%00000001
+        .byte #%00000010
+        .byte #%00000100
+        .byte #%00001000
+        .byte #%00010000
+        .byte #%00100000
+        .byte #%01000000
+        .byte #%10000000
 
     ; sprites
 DATA_MOBS ALIGN 256
