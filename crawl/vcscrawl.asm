@@ -1148,6 +1148,42 @@ Section1Bottom: SUBROUTINE
     cpy #16
     bne .lineLoop
 
+; --- ##########################
+; 16 Scanlines of Section0Bottom
+Section0Bottom: SUBROUTINE
+    ldy #0
+.lineLoop
+    ; set bg
+    lda #COL_BG_SOLID
+    ldx Vb_DrawDist
+    sta WSYNC
+    cpx #C_MAX_DRAW_DIST-4
+    bcc .solidbg
+    lda Vb_BGColEven
+.solidbg:
+    sta COLUBK
+
+    ; load PF registers for left side
+    lda (Vptr_Sec0Left),y      ; +5
+    sta PF0                 ; +3
+    lda #0                  ; +2
+    sta PF1                 ; +3
+    sta PF2                 ; +3
+
+
+    ; wait for PF0 to finish drawing
+    ; SLEEP 4
+    
+    lda (Vptr_Sec0Right),y
+    and #%11110000
+    sta PF0
+
+    iny
+    cpy #16
+    bne .lineLoop
+
+
+
 ; --- TODO: make cleaner cut betwenn section and status bar
     lda #0 
     sta WSYNC
