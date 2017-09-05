@@ -1428,15 +1428,15 @@ MoveBackPtrLOTable:
     .byte <(MoveSouth)  ; 11 -> facing north
     ; left
 MoveLeftPtrLOTable:
-    .byte <(MoveNorth)   ; 00 -> facing east
+    .byte <(MoveSouth)   ; 00 -> facing east
     .byte <(MoveEast)    ; 01 -> facing south
-    .byte <(MoveSouth)   ; 10 -> facing west
+    .byte <(MoveNorth)   ; 10 -> facing west
     .byte <(MoveWest)    ; 11 -> facing north
     ; right
 MoveRightPtrLOTable:
-    .byte <(MoveSouth)   ; 00 -> facing east
+    .byte <(MoveNorth)   ; 00 -> facing east
     .byte <(MoveWest)    ; 01 -> facing south
-    .byte <(MoveNorth)   ; 10 -> facing west
+    .byte <(MoveSouth)   ; 10 -> facing west
     .byte <(MoveEast)    ; 11 -> facing north
 
 
