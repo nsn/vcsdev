@@ -761,6 +761,15 @@ DrawScreen:
     sta NUSIZ0
     lda #COL_COMPASS
     sta COLUP0
+    
+    ; prepare mob drawing
+    ; P1 size
+    lda #%00000111
+    sta NUSIZ1
+    ; fine-tune position
+    lda #5
+    sta HMP1
+
     ; wait until vertical blank period is over
     lda INTIM
     bne DrawScreen
@@ -791,7 +800,7 @@ Section0Top: SUBROUTINE
     ; load compass
     lda (Vptr_Compass),y    ; +5
     sta GRP0                ; +3 (34)
-
+HERE:
     ; wait for beam to reach center 
     ; minus compass width, minus sta cycles (~= cycle 40)
     SLEEP 8
@@ -801,7 +810,6 @@ Section0Top: SUBROUTINE
 
     ; wait for PF0 to finish drawing
     ; SLEEP 4
-    
     lda (Vptr_Sec0Right),y
     and #%11110000
     sta PF0
@@ -812,15 +820,17 @@ Section0Top: SUBROUTINE
 ; 16 Scanlines of Section1Top
 Section1Top: SUBROUTINE
     ; set up TIA for drawing mobs
+    ; P0 size
     lda #%00000111
     sta NUSIZ0
-    sta NUSIZ1
+
     ldy #15
     ; cycle #68
 .lineLoop
     ; set bg
     lda #COL_BG_SOLID
     ldx Vb_DrawDist
+
     sta WSYNC
     cpx #C_MAX_DRAW_DIST-3
     bcc .solidbg
@@ -844,9 +854,12 @@ Section1Top: SUBROUTINE
     ; wait for first 8 PF pixels to finish
     SLEEP 4
 
+    sta RESP0
+
     ; PF1 depends on wall state
     lda (Vptr_Sec1Right),y
     and #%11110000
+    sta RESP1
     sta PF1
 
     ; PF0 
@@ -854,6 +867,7 @@ Section1Top: SUBROUTINE
     ;lda PF_WALL_STATE_0,x
     lda #%11110000
     sta PF0
+
 
     dey
     bpl .lineLoop
