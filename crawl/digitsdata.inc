@@ -79,3 +79,4 @@ DIGITS_F9_0:
     .byte #%10101010
     .byte #%11101110
     .byte #%00000000
+DIGITS_SIZE EQM $3c

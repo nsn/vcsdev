@@ -72,12 +72,14 @@ sprites.each { |sprite|
 
 # output
 allSprites.each { |name, frames|
+    size = 0
     puts "%s:" % name
     frames.each_with_index { |frame, frameIndex|
         puts "%s_F%d:" % [name, frameIndex]
         frame.each_with_index { |part, partIndex|
             puts "%s_F%d_%d:" % [name, frameIndex, partIndex]
             opts[:paddingtop].times {
+                size+=1
                 puts "    .byte #%%%08b" % 0
             }
             if opts[:inverted] then 
@@ -85,14 +87,17 @@ allSprites.each { |name, frames|
             end
             part.each { |line|
                 opts[:scale].times {
+                    size+=1
                     puts "    .byte #%%%08b" % line
                 }
             }
             opts[:paddingbottom].times {
+                size+=1
                 puts "    .byte #%%%08b" % 0
             }
         }
     }
+    puts "%s_SIZE EQM $%s" % [name, size.to_s(16)]
 }
 
 

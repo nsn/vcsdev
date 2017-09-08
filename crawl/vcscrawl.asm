@@ -397,8 +397,6 @@ Vptr_Sec2Left       ds 2
 Vptr_Sec2Right       ds 2
 Vptr_Sec3Left       ds 2
 Vptr_Sec3Right       ds 2
-; MOB Pointer, 2 bytes
-Vptr_MOB         ds 2
 ; compass pointer, 2 bytes
 Vptr_Compass     ds 2
 ; Wall states
@@ -734,7 +732,8 @@ BackgroundColor: SUBROUTINE
 
 
     ; set MOB Pointer
-    SET_POINTER Vptr_MOB, SKELETON_P0
+    SET_POINTER Vb_tmp00, SKELETON_P0
+    SET_POINTER Vb_tmp02, SKELETON_P1
     ; set Compass Pointer depending on Vb_PlayerOrientation
     ldx Vb_PlayerOrientation
     lda CompassFrameTableHI
@@ -812,6 +811,10 @@ Section0Top: SUBROUTINE
 ; --- ##########################
 ; 16 Scanlines of Section1Top
 Section1Top: SUBROUTINE
+    ; set up TIA for drawing mobs
+    lda #%00000111
+    sta NUSIZ0
+    sta NUSIZ1
     ldy #15
     ; cycle #68
 .lineLoop
@@ -968,39 +971,11 @@ TunnelCenter: SUBROUTINE
     and #%00001111
     sta PF2
 
-    ;lda #COL_BG_SOLID
-    ;sta COLUBK
-    ; load PF registers for left side
-    ;ldx Vb_LeftWall
-    ;lda PF_WALL_STATE_0,x
-    ;sta PF0
-    ;lda PF_WALL_STATE_1,x
-    ;sta PF1
-    ;lda PF_WALL_STATE_2,x
-    ;sta PF2   
-    ; 30 cycles - it's safe to re-set PF
-    ;ldx Vb_RightWall
-    ;32 - wait for PF-Pixel 15 to be drawn 
-    ;SLEEP 3 
-    ; set far end bg color
-    ;lda Vb_BGColFar ; +3 
-    ;sta COLUBK      ; +3
-    ; set PF registers in reverse order
-    ;lda PF_WALL_STATE_2,x
-    ;sta PF2
-    ;lda PF_WALL_STATE_1,x
-    ;sta PF1
-    ; re-set bg col to solid
-    ;lda #COL_BG_SOLID
-    ;sta COLUBK
-    ; finish playfield  
-    ;lda PF_WALL_STATE_0,x
-    ;sta PF0   
 
-;    lda (Vptr_MOB),y
-;    sta GRP0
-;    lda (Vptr_MOB),y
-;    sta GRP1
+    lda (Vb_tmp00),y
+    sta GRP0
+    lda (Vb_tmp02),y
+    sta GRP1
 
     ;SLEEP 2
     ; section loop

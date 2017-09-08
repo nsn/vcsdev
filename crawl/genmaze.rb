@@ -186,34 +186,15 @@ puts "MAZEDATA_0"
         }
     }
 }
-#quadrants.each_index { |x|
-#    quadrants[x].each_index { |y|
-#        quadrants[x][y].each_index { |z|
-#            puts "MAZE_%d_%d_%d" % [x , y, z]
-#            quadrants[x][y][z].each { |b|
-#                #puts "    .byte #%%%08b" % [reverse(b)]
-#                puts "    .byte #%%%08b" % [b]
-#            }
-#        }
-#    }
-#}
 
-# output transposed
-
-#quadrants.each_index { |x|
-#    quadrants[x].each_index { |y|
-#        quadrants[x][y].each_index { |z|
-#            quadrant = quadrants[x][y][z]
-#            puts "MAZE_%d_%d_%d" % [x , y, z]
-#            8.times { |a|
-#                bin = 0
-#                7.downto(0) { |b|
-#                    bin = bin << 1
-#                    bin = bin | quadrant[b][a]
+#    puts "MAZEINV_0"
+#    4.times { |y|
+#        4.times { |x|
+#            2.times { |z|
+#                puts "INV_%d_%d_%d" % [x , y, z]
+#                quadrants[x][y][z].each { |b|
+#                    puts "    .byte #%%%08b" % [reverse(b)]
 #                }
-#                puts "    .byte #%%%08b" % [bin]
 #            }
 #        }
 #    }
-#}
-
