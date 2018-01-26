@@ -800,7 +800,6 @@ Section0Top: SUBROUTINE
     ; load compass
     lda (Vptr_Compass),y    ; +5
     sta GRP0                ; +3 (34)
-HERE:
     ; wait for beam to reach center 
     ; minus compass width, minus sta cycles (~= cycle 40)
     SLEEP 8
@@ -814,6 +813,7 @@ HERE:
     and #%11110000
     sta PF0
     dey
+HERE:
     bpl .lineLoop
 
 ; --- ##########################
@@ -986,10 +986,10 @@ TunnelCenter: SUBROUTINE
     sta PF2
 
 
-    lda (Vb_tmp00),y
-    sta GRP0
-    lda (Vb_tmp02),y
-    sta GRP1
+    ;lda (Vb_tmp00),y
+    ;sta GRP0
+    ;lda (Vb_tmp02),y
+    ;sta GRP1
 
     ;SLEEP 2
     ; section loop
@@ -1119,8 +1119,14 @@ Section1Bottom: SUBROUTINE
     ; PF2 is fixed
     lda #0
     sta PF2
+
+
+    lda (Vb_tmp00),y
+    sta GRP0
+    lda (Vb_tmp02),y
+    sta GRP1
     ; wait for first 8 PF pixels to finish
-    SLEEP 4
+    ;SLEEP 4
 
     ; PF1 depends on wall state
     lda (Vptr_Sec1Right),y
@@ -1135,6 +1141,7 @@ Section1Bottom: SUBROUTINE
 
     iny
     cpy #16
+BREAK:
     bne .lineLoop
 
 ; --- ##########################
@@ -1159,7 +1166,11 @@ Section0Bottom: SUBROUTINE
     sta PF1                 ; +3
     sta PF2                 ; +3
 
-
+    ; render mob
+    lda (Vb_tmp00),y
+    sta GRP0
+    lda (Vb_tmp02),y
+    sta GRP1
     ; wait for PF0 to finish drawing
     ; SLEEP 4
     
