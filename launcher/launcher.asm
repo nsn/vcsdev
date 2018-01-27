@@ -189,6 +189,7 @@ NoMovement:
 
 ;----------------------------
 ; Draw visible scanlines
+; https://alienbill.com/2600/cookbook/subpixel.html
 ;----------------------------
 DrawScreen: SUBROUTINE
     lda #0 
@@ -253,6 +254,8 @@ OverScanLineWait:
 ;----------------------------
 DATA_Start ALIGN 256
     echo "---- start data at ",(*)
+    
+    include "hero.inc"
 
 ;----------------------------
 ; Reset/Break 
