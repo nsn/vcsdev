@@ -1,5 +1,5 @@
-; VCS Crawl 
-; (c) 2017 Michael Bayer
+; Lunar Launcher
+; (c) 2018 Michael Bayer
 ; 
 ;
 ; TODO
@@ -18,6 +18,10 @@
 VBLANK_WAIT = 42
 NUM_SCANLINES = 192
 
+; Game constants
+PLAYER_SPEED = 300      ; subpixel speed, div by 256 for pixel speed
+PLAYER_HEIGHT = 27      ; player sprite height in scanlines
+
 ;--- end Constants
 
 ;----------------------------
@@ -34,32 +38,21 @@ NUM_SCANLINES = 192
     SEG.U variables
     ORG $80
 
-Vb_tmp00                ds 1
-Vb_tmp01                ds 1
-Vb_tmp02                ds 1
-Vb_tmp03                ds 1
-Vb_tmp04                ds 1
-Vb_tmp05                ds 1
-Vb_tmp06                ds 1
-Vb_tmp07                ds 1
-Vb_tmp08                ds 1
-Vb_tmp09                ds 1
-Vb_tmp10                ds 1
-Vb_tmp11                ds 1
-Vb_tmp12                ds 1
-Vb_tmp13                ds 1
-Vb_tmp14                ds 1
-Vb_tmp15                ds 1
-Vb_tmp16                ds 1
-Vb_tmp17                ds 1
-Vb_tmp18                ds 1
-Vb_tmp19                ds 1
+;Vb_tmp00                ds 1
 ; shadow registers
 Vb_SWCHA_Shadow         ds 1
+; -----------
 ; player data
+; -----------
 Vb_PlayerPosX           ds 1
-Vb_PlayerPosY           ds 1
-; in BCF
+; Player Y-pos is stored as 2 bytes,
+; LO -> fractional part
+; HI -> integer part
+Vw_PlayerPosY           ds 2
+Vb_PlayerY              ds 1 ; skipdraw
+Vptr_PlayerSprite       ds 2 ; player sprite pointer
+; -----------
+; in BCD
 Vb_Score00              ds 1
 Vb_Score01              ds 1
 Vb_Score02              ds 1
@@ -93,16 +86,27 @@ Reset:
     ;lda #COL_PF_SOLID
     ;sta COLUPF
     ; set pf behaviour
-    ;lda #%00000001
-    ;sta CTRLPF
+    lda #%00000001
+    sta CTRLPF
     ; set player color
-    ;lda #$38
-    ;sta COLUP0
+    lda #$0F
+    sta COLUP0
     ;sta COLUP1
     ; set Player size
     ;lda #7
     ;sta NUSIZ0
     ;sta NUSIZ1
+    ; initial player pos 
+    lda #42 
+    sta Vw_PlayerPosY+1
+    lda #90
+    sta Vb_PlayerPosX
+
+    ; set high byte of player sprite pointer
+    lda #>HERO
+    sta Vptr_PlayerSprite+1
+
+
 
 ;----------------------------
 ; Main Loop
@@ -143,6 +147,10 @@ VerticalBlank:
 ;----------------------------
 GameState:
 
+;-- set player sprite pointer
+    lda #<HERO
+    sta Vptr_PlayerSprite ;store in LO byte
+
 ;-- check input
     ; joystick input
     lda SWCHA
@@ -158,14 +166,16 @@ CheckRightPressed:
     and #%10000000
     ; skip to CheckLeftPressed if not equal
     bne CheckLeftPressed
-    ;-- TODO: impl right movement
+    ; move right
+    inc Vb_PlayerPosX
 ; left?
 CheckLeftPressed:
     lda Vb_SWCHA_Shadow
     and #%01000000
     ; skip to CheckDownPressed not equal
     bne CheckDownPressed
-    ;-- TODO: impl right movement
+    ; move left
+    dec Vb_PlayerPosX
 ; down? 
 CheckDownPressed:
     ; check if down is pressed
@@ -173,7 +183,8 @@ CheckDownPressed:
     and #%00100000
     ; skip to CheckUpPressed if not pressed
     bne CheckUpPressed
-    ;-- TODO: impl down movement
+    ; move down
+    ; TODO
 ; up?
 CheckUpPressed:
     ; check if up is pressed
@@ -184,6 +195,26 @@ CheckUpPressed:
     ; move forward one step, check if valid movement
     ;-- TODO: impl up movement
 NoMovement:
+
+    ; reposition P0
+    lda Vb_PlayerPosX
+    ldx #0
+    ;jsr bzoneRepos
+
+    ; set Vb_PlayerY to vertical position (0 = top)
+    ; PlayerY = vertical position + Po height - 1
+    lda #NUM_SCANLINES + #PLAYER_HEIGHT - #1
+    sec 
+    sbc Vw_PlayerPosY+1 ;subtract integer part of position
+    sta Vb_PlayerY
+
+    ; adjust Vptr_PlayerSprite for skipDraw
+    lda Vptr_PlayerSprite
+    sec
+    sbc Vw_PlayerPosY+1
+    clc
+    adc #PLAYER_HEIGHT-#1
+    sta Vptr_PlayerSprite
 
     rts ;--- GameState
 
@@ -202,17 +233,27 @@ BREAK:
     bne .vblankWait
     sta VBLANK ; since A = #0
 
-    lda #$FF
-    sta COLUPF 
-
     ldy #NUM_SCANLINES
 .lineLoop:
     sta WSYNC
 
-    sty COLUBK
-    sty PF0
-    sty PF1
-    sty PF2
+    ;sty COLUBK
+    ;sty PF0
+    ;sty PF1
+    ;sty PF2
+
+    ; skipDraw
+    ; draw P0
+    lda #PLAYER_HEIGHT-1
+    dcp Vb_PlayerY
+    bcs .doDraw
+    lda #0
+    .byte $2c    ;BIT ABS to skip 2 bytes
+.doDraw:
+    lda (Vptr_PlayerSprite),y
+    sta GRP0
+    
+
     
     dey
     bne .lineLoop
@@ -248,14 +289,60 @@ OverScanLineWait:
     ; return
     rts
 
+;----------------------------
+; BattleZone-style sprite repositioning
+; see https://alienbill.com/2600/cookbook/subpixel.html
+; set A = desired horizontal position, then X to object
+; to be positioned (0->4 = P0->BALL)
+;----------------------------
+bzoneRepos: SUBROUTINE
+    sta WSYNC                   ; 00     Sync to start of scanline.
+    sec                         ; 02     Set the carry flag so no borrow will be applied during the division.
+.divideby15
+    sbc #15                     ; 04     Waste the necessary amount of time dividing X-pos by 15!
+    bcs .divideby15             ; 06/07  11/16/21/26/31/36/41/46/51/56/61/66
+
+    tay
+    lda fineAdjustTable,y       ; 13 -> Consume 5 cycles by guaranteeing we cross a page boundary
+    sta HMP0,x
+
+    sta RESP0,x                 ; 21/ 26/31/36/41/46/51/56/61/66/71 - Set the rough position.
+    rts
+
+
 
 ;----------------------------
 ; Data
 ;----------------------------
 DATA_Start ALIGN 256
     echo "---- start data at ",(*)
-    
+;-----------------------------
+; This table converts the "remainder" of the division by 15 (-1 to -15) to the correct
+; fine adjustment value. This table is on a page boundary to guarantee the processor
+; will cross a page boundary and waste a cycle in order to be at the precise position
+; for a RESP0,x write
+fineAdjustBegin 
+            DC.B %01110000 ; Left 7
+            DC.B %01100000 ; Left 6
+            DC.B %01010000 ; Left 5
+            DC.B %01000000 ; Left 4
+            DC.B %00110000 ; Left 3
+            DC.B %00100000 ; Left 2
+            DC.B %00010000 ; Left 1
+            DC.B %00000000 ; No movement.
+            DC.B %11110000 ; Right 1
+            DC.B %11100000 ; Right 2
+            DC.B %11010000 ; Right 3
+            DC.B %11000000 ; Right 4
+            DC.B %10110000 ; Right 5
+            DC.B %10100000 ; Right 6
+            DC.B %10010000 ; Right 7
+
+fineAdjustTable EQU fineAdjustBegin - %11110001 ; NOTE: %11110001 = -15
+
+    ALIGN 256+NUM_SCANLINES
     include "hero.inc"
+
 
 ;----------------------------
 ; Reset/Break 
