@@ -51,6 +51,7 @@ Vb_PlayerPosX           ds 1
 Vw_PlayerPosY           ds 2
 Vb_PlayerY              ds 1 ; skipdraw
 Vptr_PlayerSprite       ds 2 ; player sprite pointer
+Vb_PlayerSpriteIndex    ds 1
 ; -----------
 ; in BCD
 Vb_Score00              ds 1
@@ -103,7 +104,7 @@ Reset:
     sta Vb_PlayerPosX
 
     ; set high byte of player sprite pointer
-    lda #>HERO
+    lda #>HERO_LEFT_F0
     sta Vptr_PlayerSprite+1
 
 
@@ -147,10 +148,6 @@ VerticalBlank:
 ;----------------------------
 GameState:
 
-;-- set player sprite pointer
-    lda #<HERO
-    sta Vptr_PlayerSprite ;store in LO byte
-
 ;-- check input
     ; joystick input
     lda SWCHA
@@ -168,6 +165,9 @@ CheckRightPressed:
     bne CheckLeftPressed
     ; move right
     inc Vb_PlayerPosX
+    ; player sprite index
+    lda #1
+    sta Vb_PlayerSpriteIndex
 ; left?
 CheckLeftPressed:
     lda Vb_SWCHA_Shadow
@@ -176,6 +176,9 @@ CheckLeftPressed:
     bne CheckDownPressed
     ; move left
     dec Vb_PlayerPosX
+    ; player sprite index
+    lda #0
+    sta Vb_PlayerSpriteIndex
 ; down? 
 CheckDownPressed:
     ; check if down is pressed
@@ -194,7 +197,17 @@ CheckUpPressed:
     bne NoMovement
     ; move forward one step, check if valid movement
     ;-- TODO: impl up movement
+    ; player sprite index
+    lda Vb_PlayerSpriteIndex
+    ora #2
+    sta Vb_PlayerSpriteIndex
 NoMovement:
+
+    ;-- set player sprite pointer
+
+    ldx Vb_PlayerSpriteIndex
+    lda PlayerSpriteIndexTable,x
+    sta Vptr_PlayerSprite ;store in LO byte
 
     ; reposition P0
     lda Vb_PlayerPosX
@@ -224,7 +237,6 @@ NoMovement:
 ;----------------------------
 DrawScreen: SUBROUTINE
     lda #0 
-BREAK:
 
     ; wait until vertical blank period is over
 .vblankWait:
@@ -342,6 +354,12 @@ fineAdjustTable EQU fineAdjustBegin - %11110001 ; NOTE: %11110001 = -15
 
     ALIGN 256+NUM_SCANLINES
     include "hero.inc"
+
+PlayerSpriteIndexTable:
+    .byte <(HERO_LEFT_F0)
+    .byte <(HERO_RIGHT_F0)
+    .byte <(HERO_LEFT_F1)
+    .byte <(HERO_RIGHT_F1)
 
 
 ;----------------------------
