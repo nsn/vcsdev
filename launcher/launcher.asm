@@ -21,6 +21,9 @@ NUM_SCANLINES = 192
 ; Game constants
 PLAYER_SPEED = 300      ; subpixel speed, div by 256 for pixel speed
 PLAYER_HEIGHT = 27      ; player sprite height in scanlines
+PLAYER_COLOR_HEAD = $0e
+PLAYER_COLOR_TORSO = $8a
+PLAYER_COLOR_LEGS = $38
 
 ;--- end Constants
 
@@ -51,6 +54,7 @@ Vb_PlayerPosX           ds 1
 Vw_PlayerPosY           ds 2
 Vb_PlayerY              ds 1 ; skipdraw
 Vptr_PlayerSprite       ds 2 ; player sprite pointer
+Vptr_PlayerColor        ds 2 ; player color pointer
 Vb_PlayerSpriteIndex    ds 1
 ; -----------
 ; in BCD
@@ -106,6 +110,9 @@ Reset:
     ; set high byte of player sprite pointer
     lda #>HERO_LEFT_F0
     sta Vptr_PlayerSprite+1
+    ; set high byte of player color pointer
+    lda #>PlayerColors
+    sta Vptr_PlayerColor+1
 
 
 
@@ -204,10 +211,12 @@ CheckUpPressed:
 NoMovement:
 
     ;-- set player sprite pointer
-
     ldx Vb_PlayerSpriteIndex
     lda PlayerSpriteIndexTable,x
     sta Vptr_PlayerSprite ;store in LO byte
+    ;-- .. and color
+    lda #<(PlayerColors)
+    sta Vptr_PlayerColor
 
     ; reposition P0
     lda Vb_PlayerPosX
@@ -228,6 +237,13 @@ NoMovement:
     clc
     adc #PLAYER_HEIGHT-#1
     sta Vptr_PlayerSprite
+    ; adjust Vptr_PlayerColor
+    lda Vptr_PlayerColor
+    sec 
+    sbc Vw_PlayerPosY+1
+    clc
+    adc #PLAYER_HEIGHT-#1
+    sta Vptr_PlayerColor
 
     rts ;--- GameState
 
@@ -245,6 +261,7 @@ DrawScreen: SUBROUTINE
     bne .vblankWait
     sta VBLANK ; since A = #0
 
+    ; y will be out scanline counter
     ldy #NUM_SCANLINES
 .lineLoop:
     sta WSYNC
@@ -253,6 +270,9 @@ DrawScreen: SUBROUTINE
     ;sty PF0
     ;sty PF1
     ;sty PF2
+BREAK
+    lda (Vptr_PlayerColor),y
+    sta COLUP0
 
     ; skipDraw
     ; draw P0
@@ -355,11 +375,43 @@ fineAdjustTable EQU fineAdjustBegin - %11110001 ; NOTE: %11110001 = -15
     ALIGN 256+NUM_SCANLINES
     include "hero.inc"
 
+; -- remember kids: it's inverted...
+PlayerColors:
+    .byte #$0e
+    .byte #PLAYER_COLOR_LEGS
+    .byte #PLAYER_COLOR_LEGS
+    .byte #PLAYER_COLOR_LEGS
+    .byte #PLAYER_COLOR_LEGS
+    .byte #PLAYER_COLOR_LEGS
+    .byte #PLAYER_COLOR_LEGS
+    .byte #PLAYER_COLOR_LEGS
+    .byte #PLAYER_COLOR_LEGS
+    .byte #PLAYER_COLOR_LEGS
+    .byte #PLAYER_COLOR_LEGS
+    .byte #PLAYER_COLOR_LEGS
+    .byte #PLAYER_COLOR_LEGS
+    .byte #PLAYER_COLOR_TORSO
+    .byte #PLAYER_COLOR_TORSO
+    .byte #PLAYER_COLOR_TORSO
+    .byte #PLAYER_COLOR_TORSO
+    .byte #PLAYER_COLOR_TORSO
+    .byte #PLAYER_COLOR_TORSO
+    .byte #PLAYER_COLOR_TORSO
+    .byte #PLAYER_COLOR_TORSO
+    .byte #PLAYER_COLOR_HEAD
+    .byte #PLAYER_COLOR_HEAD
+    .byte #PLAYER_COLOR_HEAD
+    .byte #PLAYER_COLOR_HEAD
+    .byte #PLAYER_COLOR_HEAD
+    .byte #$0e
+
 PlayerSpriteIndexTable:
     .byte <(HERO_LEFT_F0)
     .byte <(HERO_RIGHT_F0)
     .byte <(HERO_LEFT_F1)
     .byte <(HERO_RIGHT_F1)
+
+
 
 
 ;----------------------------
