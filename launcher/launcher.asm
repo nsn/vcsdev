@@ -24,6 +24,8 @@ PLAYER_HEIGHT = 27      ; player sprite height in scanlines
 PLAYER_COLOR_HEAD = $0e
 PLAYER_COLOR_TORSO = $8a
 PLAYER_COLOR_LEGS = $38
+PLAYER_THRUST = 300     ; 2 byte constant, div by 256 for pixels/frame
+GRAVITY = 100           ; 2 bytes again
 
 ;--- end Constants
 
@@ -94,8 +96,8 @@ Reset:
     lda #%00000001
     sta CTRLPF
     ; set player color
-    lda #$0F
-    sta COLUP0
+    ;lda #$0F
+    ;sta COLUP0
     ;sta COLUP1
     ; set Player size
     ;lda #7
@@ -159,9 +161,9 @@ GameState:
     ; joystick input
     lda SWCHA
     ; break if nothing has changed
-    cmp Vb_SWCHA_Shadow
+    ;cmp Vb_SWCHA_Shadow
     ; beq NoMovement
-    beq NoMovement
+    ;beq NoMovement
     ; store new SWCHA state
     sta Vb_SWCHA_Shadow
 
@@ -204,11 +206,31 @@ CheckUpPressed:
     bne NoMovement
     ; move forward one step, check if valid movement
     ;-- TODO: impl up movement
-    ; player sprite index
+    ; 16bit math, adds both bytes
+    ; of player_speed to the 2 bytes
+    ; of Vw_PlayerPosY
+    clc
+    lda Vw_PlayerPosY
+    adc #<PLAYER_THRUST
+    sta Vw_PlayerPosY
+    lda Vw_PlayerPosY+1
+    adc #>PLAYER_THRUST
+    sta Vw_PlayerPosY+1
+
+    ; player sprite index changes when moving up 
     lda Vb_PlayerSpriteIndex
     ora #2
     sta Vb_PlayerSpriteIndex
 NoMovement:
+    ; apply gravity
+    clc
+    lda Vw_PlayerPosY
+    sbc #<GRAVITY
+    sta Vw_PlayerPosY
+    lda Vw_PlayerPosY+1
+    sbc #>GRAVITY
+    sta Vw_PlayerPosY+1
+
 
     ;-- set player sprite pointer
     ldx Vb_PlayerSpriteIndex
@@ -221,7 +243,7 @@ NoMovement:
     ; reposition P0
     lda Vb_PlayerPosX
     ldx #0
-    ;jsr bzoneRepos
+    jsr bzoneRepos
 
     ; set Vb_PlayerY to vertical position (0 = top)
     ; PlayerY = vertical position + Po height - 1
@@ -259,21 +281,18 @@ DrawScreen: SUBROUTINE
     sta WSYNC
     lda INTIM
     bne .vblankWait
-    sta VBLANK ; since A = #0
 
     ; y will be out scanline counter
     ldy #NUM_SCANLINES
-.lineLoop:
-    sta WSYNC
 
-    ;sty COLUBK
-    ;sty PF0
-    ;sty PF1
-    ;sty PF2
-BREAK
+    sta WSYNC
+    sta HMOVE
+    sta VBLANK ; since A = #0
+
+.lineLoop:
+
     lda (Vptr_PlayerColor),y
     sta COLUP0
-
     ; skipDraw
     ; draw P0
     lda #PLAYER_HEIGHT-1
@@ -285,8 +304,7 @@ BREAK
     lda (Vptr_PlayerSprite),y
     sta GRP0
     
-
-    
+    sta WSYNC
     dey
     bne .lineLoop
 
@@ -348,29 +366,6 @@ bzoneRepos: SUBROUTINE
 ;----------------------------
 DATA_Start ALIGN 256
     echo "---- start data at ",(*)
-;-----------------------------
-; This table converts the "remainder" of the division by 15 (-1 to -15) to the correct
-; fine adjustment value. This table is on a page boundary to guarantee the processor
-; will cross a page boundary and waste a cycle in order to be at the precise position
-; for a RESP0,x write
-fineAdjustBegin 
-            DC.B %01110000 ; Left 7
-            DC.B %01100000 ; Left 6
-            DC.B %01010000 ; Left 5
-            DC.B %01000000 ; Left 4
-            DC.B %00110000 ; Left 3
-            DC.B %00100000 ; Left 2
-            DC.B %00010000 ; Left 1
-            DC.B %00000000 ; No movement.
-            DC.B %11110000 ; Right 1
-            DC.B %11100000 ; Right 2
-            DC.B %11010000 ; Right 3
-            DC.B %11000000 ; Right 4
-            DC.B %10110000 ; Right 5
-            DC.B %10100000 ; Right 6
-            DC.B %10010000 ; Right 7
-
-fineAdjustTable EQU fineAdjustBegin - %11110001 ; NOTE: %11110001 = -15
 
     ALIGN 256+NUM_SCANLINES
     include "hero.inc"
@@ -411,6 +406,30 @@ PlayerSpriteIndexTable:
     .byte <(HERO_LEFT_F1)
     .byte <(HERO_RIGHT_F1)
 
+;-----------------------------
+; This table converts the "remainder" of the division by 15 (-1 to -15) to the correct
+; fine adjustment value. This table is on a page boundary to guarantee the processor
+; will cross a page boundary and waste a cycle in order to be at the precise position
+; for a RESP0,x write
+    ORG $FE00
+fineAdjustBegin 
+            DC.B %01110000 ; Left 7
+            DC.B %01100000 ; Left 6
+            DC.B %01010000 ; Left 5
+            DC.B %01000000 ; Left 4
+            DC.B %00110000 ; Left 3
+            DC.B %00100000 ; Left 2
+            DC.B %00010000 ; Left 1
+            DC.B %00000000 ; No movement.
+            DC.B %11110000 ; Right 1
+            DC.B %11100000 ; Right 2
+            DC.B %11010000 ; Right 3
+            DC.B %11000000 ; Right 4
+            DC.B %10110000 ; Right 5
+            DC.B %10100000 ; Right 6
+            DC.B %10010000 ; Right 7
+
+fineAdjustTable EQU fineAdjustBegin - %11110001 ; NOTE: %11110001 = -15
 
 
 
