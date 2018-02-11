@@ -25,13 +25,26 @@ PLAYER_COLOR_HEAD = $0e
 PLAYER_COLOR_TORSO = $8a
 PLAYER_COLOR_LEGS = $38
 PLAYER_THRUST = 300     ; 2 byte constant, div by 256 for pixels/frame
-GRAVITY = 100           ; 2 bytes again
+GRAVITY = -100          ; 2 bytes again
 
 ;--- end Constants
 
 ;----------------------------
 ; Macros   
 ;----------------------------
+
+    ;###################################################
+    ; adds two two byte values
+    ; M_WORD_ADD <target> <operand>
+    MAC M_WORD_ADD
+    clc
+    lda {1}
+    adc #<{2}
+    sta {1}
+    lda {1}+1
+    adc #>{2}
+    sta {1}+1
+    ENDM
 
 ;############################
 ; Bank1
@@ -204,18 +217,11 @@ CheckUpPressed:
     and #%00010000
     ; skip to NoMovement if not pressed
     bne NoMovement
-    ; move forward one step, check if valid movement
-    ;-- TODO: impl up movement
+
     ; 16bit math, adds both bytes
     ; of player_speed to the 2 bytes
     ; of Vw_PlayerPosY
-    clc
-    lda Vw_PlayerPosY
-    adc #<PLAYER_THRUST
-    sta Vw_PlayerPosY
-    lda Vw_PlayerPosY+1
-    adc #>PLAYER_THRUST
-    sta Vw_PlayerPosY+1
+    M_WORD_ADD Vw_PlayerPosY, PLAYER_THRUST
 
     ; player sprite index changes when moving up 
     lda Vb_PlayerSpriteIndex
@@ -223,14 +229,7 @@ CheckUpPressed:
     sta Vb_PlayerSpriteIndex
 NoMovement:
     ; apply gravity
-    clc
-    lda Vw_PlayerPosY
-    sbc #<GRAVITY
-    sta Vw_PlayerPosY
-    lda Vw_PlayerPosY+1
-    sbc #>GRAVITY
-    sta Vw_PlayerPosY+1
-
+    M_WORD_ADD Vw_PlayerPosY, GRAVITY
 
     ;-- set player sprite pointer
     ldx Vb_PlayerSpriteIndex
