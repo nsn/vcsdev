@@ -24,8 +24,11 @@ PLAYER_HEIGHT = 27      ; player sprite height in scanlines
 PLAYER_COLOR_HEAD = $0e
 PLAYER_COLOR_TORSO = $8a
 PLAYER_COLOR_LEGS = $38
-PLAYER_THRUST = 300     ; 2 byte constant, div by 256 for pixels/frame
-GRAVITY = -100          ; 2 bytes again
+PLAYER_THRUST = 40     ; 2 byte constant, div by 256 for pixels/frame
+PLAYER_VMAX_Y = 10     ; 
+PLAYER_VMIN_Y = -10     ; msb only
+GRAVITY = -20         ; 2 bytes again
+
 
 ;--- end Constants
 
@@ -35,8 +38,8 @@ GRAVITY = -100          ; 2 bytes again
 
     ;###################################################
     ; adds two two byte values
-    ; M_WORD_ADD <target> <operand>
-    MAC M_WORD_ADD
+    ; M_ADD_CONSTANT <target> <constant>
+    MAC M_ADD_CONSTANT
     clc
     lda {1}
     adc #<{2}
@@ -46,6 +49,18 @@ GRAVITY = -100          ; 2 bytes again
     sta {1}+1
     ENDM
 
+    ;###################################################
+    ; adds two two byte values
+    ; M_ADD_WORDS <target> <operand>
+    MAC M_ADD_WORDS
+    clc
+    lda {1}
+    adc {2}
+    sta {1}
+    lda {1}+1
+    adc {2}+1
+    sta {1}+1
+    ENDM
 ;############################
 ; Bank1
 ;############################
@@ -67,6 +82,8 @@ Vb_PlayerPosX           ds 1
 ; LO -> fractional part
 ; HI -> integer part
 Vw_PlayerPosY           ds 2
+Vw_PlayerVelX           ds 2
+Vw_PlayerVelY           ds 2
 Vb_PlayerY              ds 1 ; skipdraw
 Vptr_PlayerSprite       ds 2 ; player sprite pointer
 Vptr_PlayerColor        ds 2 ; player color pointer
@@ -210,6 +227,10 @@ CheckDownPressed:
     bne CheckUpPressed
     ; move down
     ; TODO
+    ;lda #0
+    ;sta Vw_PlayerVelY
+    ;sta Vw_PlayerVelY+1
+    M_ADD_CONSTANT Vw_PlayerVelY, GRAVITY
 ; up?
 CheckUpPressed:
     ; check if up is pressed
@@ -221,7 +242,7 @@ CheckUpPressed:
     ; 16bit math, adds both bytes
     ; of player_speed to the 2 bytes
     ; of Vw_PlayerPosY
-    M_WORD_ADD Vw_PlayerPosY, PLAYER_THRUST
+    M_ADD_CONSTANT Vw_PlayerVelY, PLAYER_THRUST
 
     ; player sprite index changes when moving up 
     lda Vb_PlayerSpriteIndex
@@ -229,7 +250,58 @@ CheckUpPressed:
     sta Vb_PlayerSpriteIndex
 NoMovement:
     ; apply gravity
-    M_WORD_ADD Vw_PlayerPosY, GRAVITY
+    M_ADD_CONSTANT Vw_PlayerVelY, GRAVITY
+
+    ;vmin?
+    ; only compare hi byte
+    lda #PLAYER_VMIN_Y
+    cmp Vw_PlayerVelY+1
+    bmi PVgtVMin
+    ; here player velocity is < PLAYER_VMIN_Y
+    sta Vw_PlayerVelY+1
+PVgtVMin:
+    ;vmax?
+    lda #PLAYER_VMAX_Y
+    cmp Vw_PlayerVelY+1
+    bpl PVTestEnd
+    ; here player vel > PLAYER_VMAX_Y
+    sta Vw_PlayerVelY+1
+PVTestEnd:
+
+EndPVTest:
+
+;    ; vmax reached?
+;    lda Vw_PlayerVelY
+;    cmp #<PLAYER_VMAX_Y
+;    bcc VYltVmax
+;    lda Vw_PlayerVelY+1
+;    cmp #>PLAYER_VMAX_Y
+;    bcc VYltVmax
+;    ; Player y vel >= v_max
+;VMAXREACHED:    
+;    lda #<PLAYER_VMAX_Y
+;    sta Vw_PlayerVelY
+;    lda #>PLAYER_VMAX_Y
+;    sta Vw_PlayerVelY+1
+;VYltVmax:
+;    ; vmin reached?
+;    lda Vw_PlayerVelY
+;    cmp #<PLAYER_VMIN_Y
+;    bcs VYgtVmin
+;    lda Vw_PlayerVelY+1
+;    cmp #>PLAYER_VMIN_Y
+;    bcs VYgtVmin
+;    ; y vel <= v_min
+;VMINREACHED:
+;    lda #<PLAYER_VMIN_Y
+;    sta Vw_PlayerVelY
+;    lda #>PLAYER_VMIN_Y
+;    sta Vw_PlayerVelY+1
+;VYgtVmin:
+
+
+    ; apply veloity to position
+    M_ADD_WORDS Vw_PlayerPosY, Vw_PlayerVelY 
 
     ;-- set player sprite pointer
     ldx Vb_PlayerSpriteIndex
