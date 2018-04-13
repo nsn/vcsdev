@@ -47,7 +47,6 @@ SCANLINES_SCORE = 16
     sta PF0
     sta PF1
     sta PF2
-    sta WSYNC
 
     ENDM
 
@@ -62,29 +61,58 @@ SCANLINES_SCORE = 16
 
     ; highlight
     M_HIGHLIGHT {1}
+BREAK{1}:
+    ; init sunflower pointers
+    ldy Vb_sunflowers_lane_{1}
+    lda SunflowerP0LoTbl,y
+    sta Vptr_sunflower_pf0
+    lda SunflowerP1LoTbl,y
+    sta Vptr_sunflower_pf1
+
+    sta WSYNC
     ; re-set pf registers
     lda #0
     sta PF0
     sta PF1
     sta PF2
-
+    ; P0 behaviour
+    lda #%00000011
+    sta NUSIZ0
+    SLEEP 10
+    sta RESP0
     ; init scanline counter
     ldy #SCANLINES_LANE
 .actionLaneLoop{1}:
+    ; PF0 (sunflower)
+    ;lda PF_SUNFLOWER,y
+    lda (Vptr_sunflower_pf0),y
+    sta PF0
+    lda (Vptr_sunflower_pf1),y
+    sta PF1
+    ; P0 (shooter)
+    lda PLANT,y
+    sta GRP0
+
+    SLEEP 10
+    ; re-set PF0/1
+    lda #0
+    sta PF0
+    sta PF1
 
     sta WSYNC
     dey
     bne .actionLaneLoop{1}
 
     ; highlight
-    lda #COL_PF_HIGHLIGHT
-    sta COLUPF
-    ldy Vb_lane_select
-    lda PF_HIGHLIGHT_{1},y
-    sta PF0
-    sta PF1
-    sta PF2
+    M_HIGHLIGHT {1}
     sta WSYNC
+;    lda #COL_PF_HIGHLIGHT
+;    sta COLUPF
+;    ldy Vb_lane_select
+;    lda PF_HIGHLIGHT_{1},y
+;    sta PF0
+;    sta PF1
+;    sta PF2
     ENDM
 
 ;----------------------------
@@ -98,6 +126,15 @@ SCANLINES_SCORE = 16
 Vb_SWCHA_Shadow         ds 1
 ; lane select
 Vb_lane_select          ds 1
+; sunflowers
+Vb_sunflowers_lane_0    ds 1
+Vb_sunflowers_lane_1    ds 1
+Vb_sunflowers_lane_2    ds 1
+Vb_sunflowers_lane_3    ds 1
+Vb_sunflowers_lane_4    ds 1
+; sunflower grahic pointer
+Vptr_sunflower_pf0       ds 2
+Vptr_sunflower_pf1       ds 2
     echo "----",($100 - *) , "bytes of RAM left"
 ;--- end Variables 
 
@@ -136,8 +173,19 @@ Reset:
     ;lda #7
     ;sta NUSIZ0
     ;sta NUSIZ1
+    
+    ; sunflower pointer hi
+    lda #>(PF_SUNFLOWER)
+    sta Vptr_sunflower_pf0+1
+    sta Vptr_sunflower_pf1+1
+
+; TEST VALUES 
     ; initial player pos 
-    ;lda #42 
+    lda #1
+    sta Vb_sunflowers_lane_1
+    sta Vb_sunflowers_lane_3
+    lda #2
+    sta Vb_sunflowers_lane_2
     ;sta Vw_PlayerPosY+1
     ;lda #90
     ;sta Vb_PlayerPosX
@@ -269,7 +317,13 @@ DrawScreen: SUBROUTINE
     sta WSYNC
     dey
     bne .resourceLane
-
+    ; scala, TODO: remove
+    lda #%10101010
+    sta PF0
+    sta PF2
+    lsr
+    sta PF1
+    sta WSYNC
  ;------------------------
  ; Action lanes
  ;------------------------
@@ -282,6 +336,10 @@ DrawScreen: SUBROUTINE
  ;------------------------
  ; Score lane 
  ;------------------------
+    lda #0
+    sta PF0
+    sta PF1
+    sta PF2
     ldy #SCANLINES_SCORE
     lda #COL_BG_SCORE
     sta COLUBK
@@ -383,7 +441,80 @@ PF_HIGHLIGHT_4:
     .byte #%00000000
     .byte #%00000000
     .byte #%11111111
-    
+
+PF_SUNFLOWER:
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%01100000
+    .byte #%00000000
+    .byte #%00000000
+PF_NOSUNFLOWER:
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+
+SunflowerP0LoTbl:
+    .byte <(PF_NOSUNFLOWER) ; 0 -> none
+    .byte <(PF_SUNFLOWER)   ; 1 -> yes
+    .byte <(PF_SUNFLOWER)   ; 2 -> yes
+SunflowerP1LoTbl:
+    .byte <(PF_NOSUNFLOWER) ; 0 -> none
+    .byte <(PF_NOSUNFLOWER) ; 1 -> nope
+    .byte <(PF_SUNFLOWER)   ; 2 -> yes
+
+    include "sprites.inc"
 
 ;-----------------------------
 ; This table converts the "remainder" of the division by 15 (-1 to -15) to the correct
