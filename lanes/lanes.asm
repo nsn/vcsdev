@@ -61,7 +61,6 @@ SCANLINES_SCORE = 16
 
     ; highlight
     M_HIGHLIGHT {1}
-BREAK{1}:
     ; init sunflower pointers
     ldy Vb_sunflowers_lane_{1}
     lda SunflowerP0LoTbl,y
@@ -69,20 +68,38 @@ BREAK{1}:
     lda SunflowerP1LoTbl,y
     sta Vptr_sunflower_pf1
 
+    ; init shooter pointer
+    ldy Vb_shooters_lane_{1}
+    bne .loadShooter
+    lda #<(NOSPRITE)
+    sta Vptr_shooter
+    lda #>(NOSPRITE)
+    sta Vptr_shooter+1
+    jmp .shooterDone
+.loadShooter
+    lda #<(PLANT)
+    sta Vptr_shooter
+    lda #>(PLANT)
+    sta Vptr_shooter+1
+.shooterDone
+
+BREAK{1}:
+    ; number of shooters
+    lda Nusiz0Tbl,y
+    sta NUSIZ0
+
     sta WSYNC
     ; re-set pf registers
     lda #0
     sta PF0
     sta PF1
     sta PF2
-    ; P0 behaviour
-    lda #%00000011
-    sta NUSIZ0
     SLEEP 10
     sta RESP0
+
     ; init scanline counter
     ldy #SCANLINES_LANE
-.actionLaneLoop{1}:
+.actionLaneLoop{1}
     ; PF0 (sunflower)
     ;lda PF_SUNFLOWER,y
     lda (Vptr_sunflower_pf0),y
@@ -90,10 +107,10 @@ BREAK{1}:
     lda (Vptr_sunflower_pf1),y
     sta PF1
     ; P0 (shooter)
-    lda PLANT,y
+    lda (Vptr_shooter),y
     sta GRP0
 
-    SLEEP 10
+    SLEEP 12
     ; re-set PF0/1
     lda #0
     sta PF0
@@ -105,6 +122,7 @@ BREAK{1}:
 
     ; highlight
     M_HIGHLIGHT {1}
+    
     sta WSYNC
 ;    lda #COL_PF_HIGHLIGHT
 ;    sta COLUPF
@@ -132,9 +150,16 @@ Vb_sunflowers_lane_1    ds 1
 Vb_sunflowers_lane_2    ds 1
 Vb_sunflowers_lane_3    ds 1
 Vb_sunflowers_lane_4    ds 1
+; shooters
+Vb_shooters_lane_0      ds 1
+Vb_shooters_lane_1      ds 1
+Vb_shooters_lane_2      ds 1
+Vb_shooters_lane_3      ds 1
+Vb_shooters_lane_4      ds 1
 ; sunflower grahic pointer
 Vptr_sunflower_pf0       ds 2
 Vptr_sunflower_pf1       ds 2
+Vptr_shooter             ds 2
     echo "----",($100 - *) , "bytes of RAM left"
 ;--- end Variables 
 
@@ -184,8 +209,13 @@ Reset:
     lda #1
     sta Vb_sunflowers_lane_1
     sta Vb_sunflowers_lane_3
+    sta Vb_shooters_lane_1
+    sta Vb_shooters_lane_3
     lda #2
     sta Vb_sunflowers_lane_2
+    sta Vb_shooters_lane_2
+    lda #3
+    sta Vb_shooters_lane_3
     ;sta Vw_PlayerPosY+1
     ;lda #90
     ;sta Vb_PlayerPosX
@@ -515,6 +545,45 @@ SunflowerP1LoTbl:
     .byte <(PF_SUNFLOWER)   ; 2 -> yes
 
     include "sprites.inc"
+NOSPRITE:
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+    .byte #%00000000
+
+Nusiz0Tbl:
+    .byte #%00000000    ; 0 shooters
+    .byte #%00000000    ; 1 shooter
+    .byte #%00000001    ; 2 shooters
+    .byte #%00000011    ; 3 shooters
+
+
 
 ;-----------------------------
 ; This table converts the "remainder" of the division by 15 (-1 to -15) to the correct

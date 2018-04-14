@@ -1,6 +1,9 @@
 require 'optparse'
 require 'chunky_png'
 
+# TODO: 
+# output color tables in a meaningful way
+
 opts = {
     :width => 1,
     :height => 8,
@@ -44,35 +47,54 @@ W = 8               # 8 pixels register width
 img = ChunkyPNG::Image.from_file(inputFile)
 
 sprites = opts[:prefix].split(/,/).map{ |p| p.strip }.select{ |p| p.to_s.empty? == FALSE }
+# color -> index
+colortable = {}
+# black -> 0
+colortable[0] = 0;
 
 # read input image
 allSprites = {}
-sprites.each { |sprite|
+allColors = {}
+sprites.each_with_index { |sprite, spriteIndex|
     currentSprite = []
+    spriteColors = []
     opts[:frames].times { |frame|
         currentFrame = []
+        frameColors = []
         opts[:width].times { |w|
             currentPart = []
+            partColors = []
             opts[:height].times { |y|
                 currentLine = 0
+                currentColor = 0
                 W.times { |x|
                     imgy = y+opts[:height]*frame;
-                    pixel = img[x,imgy]
+                    imgx = x+spriteIndex*W
+                    pixel = img[imgx,imgy]
                     v = (ChunkyPNG::Color::a(pixel) == opts[:blank])?0:1
+                    if !colortable.has_key?(v) then
+                        colortable[:v] = colortable.length
+                    end
+                    currentColor = colortable[v]
                     currentLine = (currentLine << 1)
                     currentLine = currentLine | v
                 }
                 currentPart.push(currentLine)
+                partColors.push(currentColor)
             }
             currentFrame.push(currentPart)
+            frameColors.push(partColors)
         }
         currentSprite.push(currentFrame)
+        spriteColors.push(frameColors)
     }
     allSprites[sprite] = currentSprite
+    allColors[sprite] = spriteColors
 }
 
 
 # output
+# sprite data
 allSprites.each { |name, frames|
     size = 0
     puts "%s:" % name
@@ -101,6 +123,6 @@ allSprites.each { |name, frames|
     }
     puts "%s_SIZE EQM $%s" % [name, size.to_s(16)]
 }
-
+#color data
 
 

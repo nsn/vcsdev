@@ -16,11 +16,12 @@
 
 ; ntsc constants
 VBLANK_WAIT = 42
-NUM_SCANLINES = 192
+PLAY_SCANLINES = 160
 
 ; Game constants
 PLAYER_SPEED = 300      ; subpixel speed, div by 256 for pixel speed
 PLAYER_HEIGHT = 27      ; player sprite height in scanlines
+PF_COLOR = $0a
 PLAYER_COLOR_HEAD = $0e
 PLAYER_COLOR_TORSO = $8a
 PLAYER_COLOR_LEGS = $38
@@ -61,6 +62,32 @@ GRAVITY = -20         ; 2 bytes again
     adc {2}+1
     sta {1}+1
     ENDM
+
+    ;###################################################
+    ; subtracts an 8bit constant from a 16bit variable
+    ; M_SUB <target> <constant>
+    MAC M_SUB
+    sec
+    lda {1}
+    sbc {2}
+    sta {1}
+    bcs .subDone
+.subDone:
+    dec {1}+1
+    ENDM
+
+    MAC M_ADJUST_PFPTR
+
+    ENDM
+
+    MAC M_DRAW_STRIP
+    lda (Vptr_S{1}_PF0),y
+    sta PF0
+    lda (Vptr_S{1}_PF1),y
+    sta PF1
+    lda (Vptr_S{1}_PF2),y
+    sta PF2
+    ENDM
 ;############################
 ; Bank1
 ;############################
@@ -93,6 +120,24 @@ Vb_PlayerSpriteIndex    ds 1
 Vb_Score00              ds 1
 Vb_Score01              ds 1
 Vb_Score02              ds 1
+; pf pointers
+Vptr_S0_PF0             ds 2
+Vptr_S0_PF1             ds 2
+Vptr_S0_PF2             ds 2
+Vptr_S1_PF0             ds 2
+Vptr_S1_PF1             ds 2
+Vptr_S1_PF2             ds 2
+Vptr_S2_PF0             ds 2
+Vptr_S2_PF1             ds 2
+Vptr_S2_PF2             ds 2
+Vptr_S3_PF0             ds 2
+Vptr_S3_PF1             ds 2
+Vptr_S3_PF2             ds 2
+Vptr_S4_PF0             ds 2
+Vptr_S4_PF1             ds 2
+Vptr_S4_PF2             ds 2
+;
+Vptr_jmp_target         ds 2
 
     echo "----",($100 - *) , "bytes of RAM left"
 ;--- end Variables 
@@ -120,8 +165,8 @@ Reset:
     lda #$00
     sta COLUBK
     ; set pf color
-    ;lda #COL_PF_SOLID
-    ;sta COLUPF
+    lda #PF_COLOR
+    sta COLUPF
     ; set pf behaviour
     lda #%00000001
     sta CTRLPF
@@ -268,38 +313,6 @@ PVgtVMin:
     sta Vw_PlayerVelY+1
 PVTestEnd:
 
-EndPVTest:
-
-;    ; vmax reached?
-;    lda Vw_PlayerVelY
-;    cmp #<PLAYER_VMAX_Y
-;    bcc VYltVmax
-;    lda Vw_PlayerVelY+1
-;    cmp #>PLAYER_VMAX_Y
-;    bcc VYltVmax
-;    ; Player y vel >= v_max
-;VMAXREACHED:    
-;    lda #<PLAYER_VMAX_Y
-;    sta Vw_PlayerVelY
-;    lda #>PLAYER_VMAX_Y
-;    sta Vw_PlayerVelY+1
-;VYltVmax:
-;    ; vmin reached?
-;    lda Vw_PlayerVelY
-;    cmp #<PLAYER_VMIN_Y
-;    bcs VYgtVmin
-;    lda Vw_PlayerVelY+1
-;    cmp #>PLAYER_VMIN_Y
-;    bcs VYgtVmin
-;    ; y vel <= v_min
-;VMINREACHED:
-;    lda #<PLAYER_VMIN_Y
-;    sta Vw_PlayerVelY
-;    lda #>PLAYER_VMIN_Y
-;    sta Vw_PlayerVelY+1
-;VYgtVmin:
-
-
     ; apply veloity to position
     M_ADD_WORDS Vw_PlayerPosY, Vw_PlayerVelY 
 
@@ -318,7 +331,7 @@ EndPVTest:
 
     ; set Vb_PlayerY to vertical position (0 = top)
     ; PlayerY = vertical position + Po height - 1
-    lda #NUM_SCANLINES + #PLAYER_HEIGHT - #1
+    lda #PLAY_SCANLINES + #PLAYER_HEIGHT - #1
     sec 
     sbc Vw_PlayerPosY+1 ;subtract integer part of position
     sta Vb_PlayerY
@@ -338,6 +351,40 @@ EndPVTest:
     adc #PLAYER_HEIGHT-#1
     sta Vptr_PlayerColor
 
+    ; PF pointers
+    SET_POINTER Vptr_S0_PF0, PFData0
+    SET_POINTER Vptr_S0_PF1, PFData1
+    SET_POINTER Vptr_S0_PF2, PFData2
+    SET_POINTER Vptr_S1_PF0, PFData0 
+    SET_POINTER Vptr_S1_PF1, PFData1 
+    SET_POINTER Vptr_S1_PF2, PFData2 
+    SET_POINTER Vptr_S2_PF0, PFData0 
+    SET_POINTER Vptr_S2_PF1, PFData1 
+    SET_POINTER Vptr_S2_PF2, PFData2 
+    SET_POINTER Vptr_S3_PF0, PFData0 
+    SET_POINTER Vptr_S3_PF1, PFData1 
+    SET_POINTER Vptr_S3_PF2, PFData2 
+    SET_POINTER Vptr_S4_PF0, PFData0 
+    SET_POINTER Vptr_S4_PF1, PFData1 
+    SET_POINTER Vptr_S4_PF2, PFData2 
+
+
+
+HERE:
+    M_SUB Vptr_S0_PF0, #160
+    M_SUB Vptr_S0_PF1, #160
+    M_SUB Vptr_S0_PF2, #160
+    M_SUB Vptr_S1_PF0, #160
+    M_SUB Vptr_S1_PF1, #160
+    M_SUB Vptr_S1_PF2, #160
+;    sec
+;    lda Vptr_S0_PF0
+;    sbc #192
+;    sta Vptr_S0_PF0
+;    bcs ok
+;    dec Vptr_S0_PF0+1
+;ok
+
     rts ;--- GameState
 
 ;----------------------------
@@ -354,7 +401,7 @@ DrawScreen: SUBROUTINE
     bne .vblankWait
 
     ; y will be out scanline counter
-    ldy #NUM_SCANLINES
+    ldy #PLAY_SCANLINES
 
     sta WSYNC
     sta HMOVE
@@ -362,6 +409,24 @@ DrawScreen: SUBROUTINE
 
 .lineLoop:
 
+;    lda (Vptr_S0_PF0),y
+;    sta PF0
+;    lda (Vptr_S0_PF1),y
+;    sta PF1
+;    lda (Vptr_S0_PF2),y
+;    sta PF2
+    lda #>(.playerColor-1)
+    pha
+    lda #<(.playerColor-1)
+    pha
+    
+    lda drawPFPtrHi
+    sta Vptr_jmp_target+1
+    lda drawPFPtrLoTbl,y
+    sta Vptr_jmp_target
+    jmp (Vptr_jmp_target)
+
+.playerColor
     lda (Vptr_PlayerColor),y
     sta COLUP0
     ; skipDraw
@@ -431,6 +496,22 @@ bzoneRepos: SUBROUTINE
     rts
 
 
+drawStrip0: SUBROUTINE
+    M_DRAW_STRIP 0
+    rts
+drawStrip1: SUBROUTINE
+    M_DRAW_STRIP 1
+    rts
+drawStrip2: SUBROUTINE
+    M_DRAW_STRIP 2
+    rts
+drawStrip3: SUBROUTINE
+    M_DRAW_STRIP 3
+    rts
+drawStrip4: SUBROUTINE
+    M_DRAW_STRIP 4
+    rts
+
 
 ;----------------------------
 ; Data
@@ -438,7 +519,13 @@ bzoneRepos: SUBROUTINE
 DATA_Start ALIGN 256
     echo "---- start data at ",(*)
 
-    ALIGN 256+NUM_SCANLINES
+drawPFPtrHi:
+    .byte >(drawStrip0)
+    ; maps y register to drawStrip subroutine
+    include "draw_pf_tbl.inc" 
+
+
+    ALIGN 256+PLAY_SCANLINES
     include "hero.inc"
 
 ; -- remember kids: it's inverted...
@@ -502,6 +589,7 @@ fineAdjustBegin
 
 fineAdjustTable EQU fineAdjustBegin - %11110001 ; NOTE: %11110001 = -15
 
+    include "pfdata.inc"
 
 
 ;----------------------------
