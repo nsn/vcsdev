@@ -52,6 +52,28 @@ SCANLINES_SCORE = 16
 
     ;###################################################
     ;
+    ; M_SPRITEPTR 0, shooter, PLANT
+    MAC M_SPRITEPTR
+
+    ; init shooter pointer
+    ldy Vb_{2}s_lane_{1}
+    bne .load{2}
+    lda #<(NOSPRITE)
+    sta Vptr_{2}
+    lda #>(NOSPRITE)
+    sta Vptr_{2}+1
+    jmp .{2}Done
+.load{2}
+    lda #<({3})
+    sta Vptr_{2}
+    lda #>({3})
+    sta Vptr_{2}+1
+.{2}Done
+
+    ENDM
+
+    ;###################################################
+    ;
     ; M_ACTION_LANE 0 LIGHT
     MAC M_ACTION_LANE
 
@@ -69,33 +91,31 @@ SCANLINES_SCORE = 16
     sta Vptr_sunflower_pf1
 
     ; init shooter pointer
-    ldy Vb_shooters_lane_{1}
-    bne .loadShooter
-    lda #<(NOSPRITE)
-    sta Vptr_shooter
-    lda #>(NOSPRITE)
-    sta Vptr_shooter+1
-    jmp .shooterDone
-.loadShooter
-    lda #<(PLANT)
-    sta Vptr_shooter
-    lda #>(PLANT)
-    sta Vptr_shooter+1
-.shooterDone
-
-BREAK{1}:
+    M_SPRITEPTR {1}, shooter, PLANT
     ; number of shooters
     lda Nusiz0Tbl,y
     sta NUSIZ0
-
-    sta WSYNC
+    ; init zombie pointer
+    M_SPRITEPTR {1}, zombie, ZOMBIE
+    ; number of zombies
+    lda Nusiz1Tbl,y
+    sta NUSIZ1
+    ; zombie positioning
+BREAK{1}
+    lda Vb_zombies_xpos_{1}
+    ldx #1
+    jsr bzoneRepos
     ; re-set pf registers
     lda #0
     sta PF0
     sta PF1
     sta PF2
-    SLEEP 10
-    sta RESP0
+
+    sta WSYNC
+    sta HMOVE
+
+    ;SLEEP 10
+    ;sta RESP0
 
     ; init scanline counter
     ldy #SCANLINES_LANE
@@ -109,12 +129,16 @@ BREAK{1}:
     ; P0 (shooter)
     lda (Vptr_shooter),y
     sta GRP0
+    ; P1 (zombie)
+    lda (Vptr_zombie),y
+    sta GRP1
 
     SLEEP 12
     ; re-set PF0/1
     lda #0
     sta PF0
     sta PF1
+
 
     sta WSYNC
     dey
@@ -156,10 +180,22 @@ Vb_shooters_lane_1      ds 1
 Vb_shooters_lane_2      ds 1
 Vb_shooters_lane_3      ds 1
 Vb_shooters_lane_4      ds 1
+; zombies
+Vb_zombies_lane_0       ds 1
+Vb_zombies_lane_1       ds 1
+Vb_zombies_lane_2       ds 1
+Vb_zombies_lane_3       ds 1
+Vb_zombies_lane_4       ds 1
+Vb_zombies_xpos_0       ds 1
+Vb_zombies_xpos_1       ds 1
+Vb_zombies_xpos_2       ds 1
+Vb_zombies_xpos_3       ds 1
+Vb_zombies_xpos_4       ds 1
 ; sunflower grahic pointer
 Vptr_sunflower_pf0       ds 2
 Vptr_sunflower_pf1       ds 2
 Vptr_shooter             ds 2
+Vptr_zombie              ds 2
     echo "----",($100 - *) , "bytes of RAM left"
 ;--- end Variables 
 
@@ -204,6 +240,7 @@ Reset:
     sta Vptr_sunflower_pf0+1
     sta Vptr_sunflower_pf1+1
 
+
 ; TEST VALUES 
     ; initial player pos 
     lda #1
@@ -211,14 +248,23 @@ Reset:
     sta Vb_sunflowers_lane_3
     sta Vb_shooters_lane_1
     sta Vb_shooters_lane_3
+    sta Vb_zombies_lane_1
     lda #2
+    sta Vb_zombies_lane_2
     sta Vb_sunflowers_lane_2
     sta Vb_shooters_lane_2
     lda #3
-    sta Vb_shooters_lane_3
+    sta Vb_zombies_lane_3
+    sta Vb_shooters_lane_4
     ;sta Vw_PlayerPosY+1
-    ;lda #90
-    ;sta Vb_PlayerPosX
+    lda #90
+    sta Vb_zombies_xpos_0
+    sta Vb_zombies_xpos_2
+    sta Vb_zombies_xpos_3
+    sta Vb_zombies_xpos_4
+    lda #104
+    sta Vb_zombies_xpos_1
+
 
 ;----------------------------
 ; Main Loop
@@ -275,6 +321,7 @@ CheckRightPressed:
     ; skip to CheckLeftPressed if not equal
     bne CheckLeftPressed
     ; move right
+    inc Vb_zombies_xpos_1
 ; left?
 CheckLeftPressed:
     lda Vb_SWCHA_Shadow
@@ -282,6 +329,7 @@ CheckLeftPressed:
     ; skip to CheckDownPressed not equal
     bne CheckDownPressed
     ; move left
+    dec Vb_zombies_xpos_1
 ; down? 
 CheckDownPressed:
     ; check if down is pressed
@@ -315,6 +363,12 @@ WrapUpPressed:
     sta Vb_lane_select
 NoMovement:
 
+    ; position shooters once per frame
+    lda #40
+    ldx #0
+    jsr bzoneRepos
+    
+
     rts ;--- GameState
 
 ;----------------------------
@@ -347,6 +401,10 @@ DrawScreen: SUBROUTINE
     sta WSYNC
     dey
     bne .resourceLane
+    ; set P0 hmove to 0
+    lda #0
+    sta HMP0
+
     ; scala, TODO: remove
     lda #%10101010
     sta PF0
@@ -583,6 +641,11 @@ Nusiz0Tbl:
     .byte #%00000001    ; 2 shooters
     .byte #%00000011    ; 3 shooters
 
+Nusiz1Tbl:
+    .byte #%00000000    ; 0 zombies
+    .byte #%00000000    ; 1 zombies
+    .byte #%00000001    ; 2 zombies
+    .byte #%00000011    ; 3 zombies 
 
 
 ;-----------------------------
