@@ -25,10 +25,11 @@ COL_BG_DARK =  $c4
 
 COL_PF_HIGHLIGHT = $1e
 
-
 SCANLINES_RESOURCE = 16
 SCANLINES_LANE = 30
 SCANLINES_SCORE = 16
+
+ZOMBIE_X_VEL_INIT = 10
 
 
 ;--- end Constants
@@ -148,15 +149,59 @@ BREAK{1}
     M_HIGHLIGHT {1}
     
     sta WSYNC
-;    lda #COL_PF_HIGHLIGHT
-;    sta COLUPF
-;    ldy Vb_lane_select
-;    lda PF_HIGHLIGHT_{1},y
-;    sta PF0
-;    sta PF1
-;    sta PF2
     ENDM
 
+    ;###################################################
+    ; adds two two-byte variables
+    ; M_WORD_ADD <target> <operand>
+    MAC M_WORD_ADD
+    clc
+    lda {1}
+    adc {2}
+    sta {1}
+    lda {1}+1
+    adc {2}+1
+    sta {1}+1
+    ENDM
+    
+    ;###################################################
+    ; subtracts a two-byte variable from another one
+    ; M_WORD_SUB <target> <operand>
+    MAC M_WORD_SUB
+    clc
+    lda {1}+1
+    sbc {2}+1
+    sta {1}+1
+    lda {1}
+    sbc {2}
+    sta {1}
+    ENDM
+    
+    ;###################################################
+    ; adds a constant to a  two-byte variable
+    ; M_ADD_CONSTANT <target> <constant>
+    MAC M_ADD_CONSTANT
+    clc
+    lda {1}
+    adc #<{2}
+    sta {1}
+    lda {1}+1
+    adc #>{2}
+    sta {1}+1
+    ENDM
+
+    ;###################################################
+    ; subtracts a constant from a  two-byte variable
+    ; M_ADD_CONSTANT <target> <constant>
+    MAC M_SUB_CONSTANT
+    clc
+    lda {1}+1
+    sbc #>{2}
+    sta {1}+1
+    lda {1}
+    sbc #<{2}
+    sta {1}
+    ENDM
 ;----------------------------
 ; Variables
 ;----------------------------
@@ -186,11 +231,12 @@ Vb_zombies_lane_1       ds 1
 Vb_zombies_lane_2       ds 1
 Vb_zombies_lane_3       ds 1
 Vb_zombies_lane_4       ds 1
-Vb_zombies_xpos_0       ds 1
-Vb_zombies_xpos_1       ds 1
-Vb_zombies_xpos_2       ds 1
-Vb_zombies_xpos_3       ds 1
-Vb_zombies_xpos_4       ds 1
+Vb_zombie_xvel          ds 2
+Vb_zombies_xpos_0       ds 2
+Vb_zombies_xpos_1       ds 2
+Vb_zombies_xpos_2       ds 2
+Vb_zombies_xpos_3       ds 2
+Vb_zombies_xpos_4       ds 2
 ; sunflower grahic pointer
 Vptr_sunflower_pf0       ds 2
 Vptr_sunflower_pf1       ds 2
@@ -240,6 +286,12 @@ Reset:
     sta Vptr_sunflower_pf0+1
     sta Vptr_sunflower_pf1+1
 
+    ; initialize zombie x velocity
+FOOOO
+    lda #<ZOMBIE_X_VEL_INIT
+    sta Vb_zombie_xvel+1
+    lda #>ZOMBIE_X_VEL_INIT
+    sta Vb_zombie_xvel
 
 ; TEST VALUES 
     ; initial player pos 
@@ -367,7 +419,9 @@ NoMovement:
     lda #40
     ldx #0
     jsr bzoneRepos
-    
+    ; update zombie xpos
+BREAK:
+    M_WORD_SUB Vb_zombies_xpos_1, Vb_zombie_xvel 
 
     rts ;--- GameState
 
@@ -406,11 +460,11 @@ DrawScreen: SUBROUTINE
     sta HMP0
 
     ; scala, TODO: remove
-    lda #%10101010
-    sta PF0
-    sta PF2
-    lsr
-    sta PF1
+;    lda #%10101010
+;    sta PF0
+;    sta PF2
+;    lsr
+;    sta PF1
     sta WSYNC
  ;------------------------
  ; Action lanes
