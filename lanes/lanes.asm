@@ -25,6 +25,17 @@ COL_BG_DARK =  $c4
 
 COL_PF_HIGHLIGHT = $1e
 
+COL_ZOMBIE_SKIN_1 = $0a ; grey
+COL_ZOMBIE_SKIN_2 = $b2 ; green
+COL_ZOMBIE_SKIN_3 = $52 ; purple
+COL_ZOMBIE_SHIRT_1 = $16
+COL_ZOMBIE_SHIRT_2 = $26
+COL_ZOMBIE_SHIRT_3 = $36
+COL_ZOMBIE_PANTS = $84
+COL_ZOMBIE_SHOES = $e2
+
+COL_SHOOTER = $ba
+
 SCANLINES_RESOURCE = 16
 SCANLINES_LANE = 30
 SCANLINES_SCORE = 16
@@ -101,6 +112,8 @@ ZOMBIE_X_VEL_INIT = 10
     ; number of zombies
     lda Nusiz1Tbl,y
     sta NUSIZ1
+    ; init zombie color pointer
+    ; TODO: different zombie colors per lane?
     ; zombie positioning
 BREAK{1}
     lda Vb_zombies_xpos_{1}
@@ -127,12 +140,22 @@ BREAK{1}
     sta PF0
     lda (Vptr_sunflower_pf1),y
     sta PF1
+
     ; P0 (shooter)
+    ; grafix
     lda (Vptr_shooter),y
     sta GRP0
+    ; color
+    lda SHOOTER_COLORS,y
+    sta COLUP0
+
     ; P1 (zombie)
+    ; grafix
     lda (Vptr_zombie),y
     sta GRP1
+    ; color 
+    lda (Vptr_zombie_colors),y
+    sta COLUP1
 
     SLEEP 12
     ; re-set PF0/1
@@ -242,6 +265,7 @@ Vptr_sunflower_pf0       ds 2
 Vptr_sunflower_pf1       ds 2
 Vptr_shooter             ds 2
 Vptr_zombie              ds 2
+Vptr_zombie_colors       ds 2
     echo "----",($100 - *) , "bytes of RAM left"
 ;--- end Variables 
 
@@ -287,7 +311,6 @@ Reset:
     sta Vptr_sunflower_pf1+1
 
     ; initialize zombie x velocity
-FOOOO
     lda #<ZOMBIE_X_VEL_INIT
     sta Vb_zombie_xvel+1
     lda #>ZOMBIE_X_VEL_INIT
@@ -420,8 +443,15 @@ NoMovement:
     ldx #0
     jsr bzoneRepos
     ; update zombie xpos
-BREAK:
     M_WORD_SUB Vb_zombies_xpos_1, Vb_zombie_xvel 
+    ; set zombie colors
+    ; hi byte
+    lda #>ZOMBIE_COLORS_1
+    sta Vptr_zombie_colors+1
+    ; lo byte
+    lda #<ZOMBIE_COLORS_1
+    sta Vptr_zombie_colors
+
 
     rts ;--- GameState
 
@@ -450,8 +480,7 @@ DrawScreen: SUBROUTINE
  ;------------------------
     lda #COL_BG_RESOURCES
     sta COLUBK
-.resourceLane:
-    
+.resourceLane
     sta WSYNC
     dey
     bne .resourceLane
@@ -688,6 +717,67 @@ NOSPRITE:
     .byte #%00000000
     .byte #%00000000
     .byte #%00000000
+SHOOTER_COLORS:
+SHOOTER_COLORS_1:
+    .byte #$e0
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #COL_SHOOTER
+    .byte #$e0
+ZOMBIE_COLORS:
+ZOMBIE_COLORS_1:
+    .byte #$e0
+    .byte #COL_ZOMBIE_SHOES
+    .byte #COL_ZOMBIE_SHOES
+    .byte #COL_ZOMBIE_SHOES
+    .byte #COL_ZOMBIE_PANTS
+    .byte #COL_ZOMBIE_PANTS
+    .byte #COL_ZOMBIE_PANTS
+    .byte #COL_ZOMBIE_PANTS
+    .byte #COL_ZOMBIE_PANTS
+    .byte #COL_ZOMBIE_SHOES
+    .byte #COL_ZOMBIE_SHIRT_1
+    .byte #COL_ZOMBIE_SHIRT_1
+    .byte #COL_ZOMBIE_SHIRT_1
+    .byte #COL_ZOMBIE_SHIRT_1
+    .byte #COL_ZOMBIE_SHIRT_1
+    .byte #COL_ZOMBIE_SHIRT_1
+    .byte #COL_ZOMBIE_SHIRT_1
+    .byte #COL_ZOMBIE_SHIRT_1
+    .byte #COL_ZOMBIE_SKIN_1
+    .byte #COL_ZOMBIE_SKIN_1
+    .byte #COL_ZOMBIE_SKIN_1
+    .byte #COL_ZOMBIE_SKIN_1
+    .byte #COL_ZOMBIE_SKIN_1
+    .byte #COL_ZOMBIE_SKIN_1
+    .byte #COL_ZOMBIE_SKIN_1
+    .byte #COL_ZOMBIE_SKIN_1
+    .byte #COL_ZOMBIE_SKIN_1
+    .byte #$e0
+    
 
 Nusiz0Tbl:
     .byte #%00000000    ; 0 shooters
