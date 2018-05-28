@@ -66,20 +66,19 @@ ZOMBIE_X_VEL_INIT = 10
     ;
     ; M_SPRITEPTR 0, shooter, PLANT
     MAC M_SPRITEPTR
-
     ; init shooter pointer
-    ldy Vb_{2}s_lane_{1}
-    bne .load{2}
-    lda #<(NOSPRITE)
-    sta Vptr_{2}
-    lda #>(NOSPRITE)
-    sta Vptr_{2}+1
-    jmp .{2}Done
+    ldy Vb_{2}s_lane_{1}        ; +3     
+    bne .load{2}                ; +2/+3
+    lda #<(NOSPRITE)            ; 
+    sta Vptr_{2}                ;
+    lda #>(NOSPRITE)            ;
+    sta Vptr_{2}+1              ;
+    jmp .{2}Done                ;
 .load{2}
-    lda #<({3})
-    sta Vptr_{2}
-    lda #>({3})
-    sta Vptr_{2}+1
+    lda #<({3})                 ;
+    sta Vptr_{2}                ;
+    lda #>({3})                 ;
+    sta Vptr_{2}+1              ;
 .{2}Done
 
     ENDM
@@ -89,47 +88,57 @@ ZOMBIE_X_VEL_INIT = 10
     ; M_ACTION_LANE 0 LIGHT
     MAC M_ACTION_LANE
 
+BREAK{1}
     ; init BGCOLOR
     lda #COL_BG_{2}
-    sta COLUBK
-
+    sta COLUBK                      ; (5)
+    
     ; highlight
-    M_HIGHLIGHT {1}
+    M_HIGHLIGHT {1}                 ; (21)
     ; init sunflower pointers
     ldy Vb_sunflowers_lane_{1}
     lda SunflowerP0LoTbl,y
     sta Vptr_sunflower_pf0
     lda SunflowerP1LoTbl,y
-    sta Vptr_sunflower_pf1
+    sta Vptr_sunflower_pf1          ; (38)
 
     ; init shooter pointer
-    M_SPRITEPTR {1}, shooter, PLANT
+    M_SPRITEPTR {1}, shooter, PLANT ; (56)
     ; number of shooters
     lda Nusiz0Tbl,y
-    sta NUSIZ0
+    sta NUSIZ0                      ; (63)
+
+FOOO{1}
+    ; re-set pf registers
+    SLEEP 2
+    lda #0                          ; +e
+    sta PF0                         ; +3
+    sta PF1                         ; +3
+    ; end scanline 1
+    sta WSYNC
+    ; clear PF2 *after* WSYNC to prevent artifacts
+    ; from premature clearing 
+    sta PF2                         ; +3
+
     ; init zombie pointer
-    M_SPRITEPTR {1}, zombie, ZOMBIE
+    M_SPRITEPTR {1}, zombie, ZOMBIE ; (16)
     ; number of zombies
     lda Nusiz1Tbl,y
-    sta NUSIZ1
-    ; init zombie color pointer
-    ; TODO: different zombie colors per lane?
+    sta NUSIZ1                      ; (23)
+
+    ; first thing in bzoneRepos is a WSYNC
+    ; so there's about 25 cycles of space left
+    ; at this point
+
+
     ; zombie positioning
-BREAK{1}
     lda Vb_zombies_xpos_{1}
-    ldx #1
+    ldx #1                          ; (28)
     jsr bzoneRepos
-    ; re-set pf registers
-    lda #0
-    sta PF0
-    sta PF1
-    sta PF2
+
 
     sta WSYNC
     sta HMOVE
-
-    ;SLEEP 10
-    ;sta RESP0
 
     ; init scanline counter
     ldy #SCANLINES_LANE
@@ -294,7 +303,7 @@ Reset:
     lda #COL_PF_HIGHLIGHT
     sta COLUPF
     ; set pf behaviour
-    lda #%00000001
+    lda #%00000000
     sta CTRLPF
     ; set player color
     ;lda #$0F
@@ -686,6 +695,15 @@ SunflowerP1LoTbl:
     .byte <(PF_SUNFLOWER)   ; 2 -> yes
 
     include "sprites.inc"
+ZOMBIE_FrameTblLo:
+    .byte <(ZOMBIE_F0)
+    .byte <(ZOMBIE_F1)
+    .byte <(ZOMBIE_F2)
+PLANT_FrameTblLo:
+    .byte <(PLANT_F0)
+    .byte <(PLANT_F1)
+    .byte <(PLANT_F2)
+
 NOSPRITE:
     .byte #%00000000
     .byte #%00000000
