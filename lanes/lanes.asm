@@ -103,6 +103,7 @@ ZOMBIE_X_VEL_INIT = 10
     lda SunflowerP1LoTbl,y
     sta Vptr_sunflower_pf1          ; (38)
 
+BREAK{1}:
     ; init shooter pointer
     M_SPRITEPTR {1}, shooter, PLANT ; (56)
     ; number of shooters
@@ -137,7 +138,6 @@ ZOMBIE_X_VEL_INIT = 10
     ; +++ bzoneRepos ends scanline 2 (53)
     jsr bzoneRepos
  
-BREAK{1}:
     ; +++ end scanline 3 (54)
     sta WSYNC
     sta HMOVE
