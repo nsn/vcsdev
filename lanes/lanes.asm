@@ -87,14 +87,15 @@ ZOMBIE_X_VEL_INIT = 10
     ;
     ; M_ACTION_LANE 0 LIGHT
     MAC M_ACTION_LANE
-
-BREAK{1}
+       
+    ; +++ start scanline 1 (52)
     ; init BGCOLOR
     lda #COL_BG_{2}
     sta COLUBK                      ; (5)
     
     ; highlight
     M_HIGHLIGHT {1}                 ; (21)
+
     ; init sunflower pointers
     ldy Vb_sunflowers_lane_{1}
     lda SunflowerP0LoTbl,y
@@ -108,13 +109,12 @@ BREAK{1}
     lda Nusiz0Tbl,y
     sta NUSIZ0                      ; (63)
 
-FOOO{1}
     ; re-set pf registers
     SLEEP 2
     lda #0                          ; +e
     sta PF0                         ; +3
     sta PF1                         ; +3
-    ; end scanline 1
+    ; +++ end scanline 1 (52)
     sta WSYNC
     ; clear PF2 *after* WSYNC to prevent artifacts
     ; from premature clearing 
@@ -134,9 +134,11 @@ FOOO{1}
     ; zombie positioning
     lda Vb_zombies_xpos_{1}
     ldx #1                          ; (28)
+    ; +++ bzoneRepos ends scanline 2 (53)
     jsr bzoneRepos
-
-
+ 
+BREAK{1}:
+    ; +++ end scanline 3 (54)
     sta WSYNC
     sta HMOVE
 
@@ -155,8 +157,8 @@ FOOO{1}
     lda (Vptr_shooter),y
     sta GRP0
     ; color
-    lda SHOOTER_COLORS,y
-    sta COLUP0
+    ;lda SHOOTER_COLORS,y
+    ;sta COLUP0
 
     ; P1 (zombie)
     ; grafix
@@ -651,9 +653,11 @@ PF_SUNFLOWER:
     .byte #%01100000
     .byte #%01100000
     .byte #%01100000
+    .byte #%01100000
     .byte #%00000000
     .byte #%00000000
 PF_NOSUNFLOWER:
+    .byte #%00000000
     .byte #%00000000
     .byte #%00000000
     .byte #%00000000
@@ -705,6 +709,7 @@ PLANT_FrameTblLo:
     .byte <(PLANT_F2)
 
 NOSPRITE:
+    .byte #%00000000
     .byte #%00000000
     .byte #%00000000
     .byte #%00000000
