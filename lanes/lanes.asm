@@ -134,7 +134,7 @@ BREAK{1}:
 
 
     ; zombie positioning
-    lda Vb_zombies_xpos_{1}
+    lda Vw_zombies_xpos{1}
     ldx #1                          ; (28)
     ; +++ bzoneRepos ends scanline 2 (53)
     jsr bzoneRepos
@@ -276,12 +276,12 @@ Vb_zombies_lane_1       ds 1
 Vb_zombies_lane_2       ds 1
 Vb_zombies_lane_3       ds 1
 Vb_zombies_lane_4       ds 1
-Vb_zombie_xvel          ds 2
-Vb_zombies_xpos_0       ds 2
-Vb_zombies_xpos_1       ds 2
-Vb_zombies_xpos_2       ds 2
-Vb_zombies_xpos_3       ds 2
-Vb_zombies_xpos_4       ds 2
+Vw_zombie_xvel          ds 2
+Vw_zombies_xpos0       ds 2
+Vw_zombies_xpos1       ds 2
+Vw_zombies_xpos2       ds 2
+Vw_zombies_xpos3       ds 2
+Vw_zombies_xpos4       ds 2
 ; sunflower grahic pointer
 Vptr_sunflower_pf0       ds 2
 Vptr_sunflower_pf1       ds 2
@@ -334,9 +334,9 @@ Reset:
 
     ; initialize zombie x velocity
     lda #<ZOMBIE_X_VEL_INIT
-    sta Vb_zombie_xvel+1
+    sta Vw_zombie_xvel+1
     lda #>ZOMBIE_X_VEL_INIT
-    sta Vb_zombie_xvel
+    sta Vw_zombie_xvel
 
 ; TEST VALUES 
     ; initial player pos 
@@ -355,12 +355,12 @@ Reset:
     sta Vb_shooters_lane_4
     ;sta Vw_PlayerPosY+1
     lda #90
-    sta Vb_zombies_xpos_0
-    sta Vb_zombies_xpos_2
-    sta Vb_zombies_xpos_3
-    sta Vb_zombies_xpos_4
+    sta Vw_zombies_xpos0
+    sta Vw_zombies_xpos2
+    sta Vw_zombies_xpos3
+    sta Vw_zombies_xpos4
     lda #104
-    sta Vb_zombies_xpos_1
+    sta Vw_zombies_xpos1
 
 
 ;----------------------------
@@ -418,7 +418,7 @@ CheckRightPressed:
     ; skip to CheckLeftPressed if not equal
     bne CheckLeftPressed
     ; move right
-    inc Vb_zombies_xpos_1
+    inc Vw_zombies_xpos1
 ; left?
 CheckLeftPressed:
     lda Vb_SWCHA_Shadow
@@ -426,7 +426,7 @@ CheckLeftPressed:
     ; skip to CheckDownPressed not equal
     bne CheckDownPressed
     ; move left
-    dec Vb_zombies_xpos_1
+    dec Vw_zombies_xpos1
 ; down? 
 CheckDownPressed:
     ; check if down is pressed
@@ -465,7 +465,7 @@ NoMovement:
     ldx #0
     jsr bzoneRepos
     ; update zombie xpos
-    M_WORD_SUB Vb_zombies_xpos_1, Vb_zombie_xvel 
+    M_WORD_SUB Vw_zombies_xpos1, Vw_zombie_xvel 
     ; set zombie colors
     ; hi byte
     lda #>ZOMBIE_COLORS_1
