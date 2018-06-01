@@ -33,11 +33,12 @@ COL_ZOMBIE_SHIRT_2 = $26
 COL_ZOMBIE_SHIRT_3 = $36
 COL_ZOMBIE_PANTS = $84
 COL_ZOMBIE_SHOES = $e2
+COL_ZOMBIE_HAIR = $e2
 
 COL_SHOOTER = $ba
 
 SCANLINES_RESOURCE = 16
-SCANLINES_LANE = 30
+SCANLINES_LANE = 25
 SCANLINES_SCORE = 16
 
 ZOMBIE_X_VEL_INIT = 10
@@ -113,13 +114,13 @@ BREAK{1}:
     ; re-set pf registers
     SLEEP 2
     lda #0                          ; +e
-    sta PF0                         ; +3
+    sta PF2                         ; +3
     sta PF1                         ; +3
     ; +++ end scanline 1 (52)
     sta WSYNC
     ; clear PF2 *after* WSYNC to prevent artifacts
     ; from premature clearing 
-    sta PF2                         ; +3
+    sta PF0                         ; +3
 
     ; init zombie pointer
     M_SPRITEPTR {1}, zombie, ZOMBIE ; (16)
@@ -178,6 +179,14 @@ BREAK{1}:
     sta WSYNC
     dey
     bne .actionLaneLoop{1}
+
+    ; re-set graphics registers
+    lda #0
+    sta GRP0
+    sta GRP1
+    ; 2 empty lines
+    sta WSYNC
+    sta WSYNC
 
     ; highlight
     M_HIGHLIGHT {1}
@@ -247,6 +256,8 @@ BREAK{1}:
 Vb_SWCHA_Shadow         ds 1
 ; lane select
 Vb_lane_select          ds 1
+; frame counter
+Vw_frame_counter        ds 2
 ; sunflowers
 Vb_sunflowers_lane_0    ds 1
 Vb_sunflowers_lane_1    ds 1
@@ -305,7 +316,7 @@ Reset:
     lda #COL_PF_HIGHLIGHT
     sta COLUPF
     ; set pf behaviour
-    lda #%00000000
+    lda #%00000001
     sta CTRLPF
     ; set player color
     ;lda #$0F
@@ -702,11 +713,9 @@ SunflowerP1LoTbl:
 ZOMBIE_FrameTblLo:
     .byte <(ZOMBIE_F0)
     .byte <(ZOMBIE_F1)
-    .byte <(ZOMBIE_F2)
 PLANT_FrameTblLo:
     .byte <(PLANT_F0)
     .byte <(PLANT_F1)
-    .byte <(PLANT_F2)
 
 NOSPRITE:
     .byte #%00000000
@@ -742,7 +751,6 @@ NOSPRITE:
     .byte #%00000000
 SHOOTER_COLORS:
 SHOOTER_COLORS_1:
-    .byte #$e0
     .byte #COL_SHOOTER
     .byte #COL_SHOOTER
     .byte #COL_SHOOTER
@@ -769,10 +777,8 @@ SHOOTER_COLORS_1:
     .byte #COL_SHOOTER
     .byte #COL_SHOOTER
     .byte #COL_SHOOTER
-    .byte #$e0
 ZOMBIE_COLORS:
 ZOMBIE_COLORS_1:
-    .byte #$e0
     .byte #COL_ZOMBIE_SHOES
     .byte #COL_ZOMBIE_SHOES
     .byte #COL_ZOMBIE_SHOES
@@ -798,8 +804,7 @@ ZOMBIE_COLORS_1:
     .byte #COL_ZOMBIE_SKIN_1
     .byte #COL_ZOMBIE_SKIN_1
     .byte #COL_ZOMBIE_SKIN_1
-    .byte #COL_ZOMBIE_SKIN_1
-    .byte #$e0
+    .byte #COL_ZOMBIE_HAIR
     
 
 Nusiz0Tbl:
